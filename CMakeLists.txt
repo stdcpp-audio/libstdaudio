@@ -16,6 +16,9 @@ add_library(libstdaudio
 add_executable(white_noise examples/white_noise.cpp)
 target_link_libraries(white_noise libstdaudio)
 
+add_executable(level_meter examples/level_meter.cpp)
+target_link_libraries(level_meter libstdaudio)
+
 add_executable(print_devices examples/print_devices.cpp)
 target_link_libraries(print_devices libstdaudio)
 
