@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 if(APPLE)
   add_definitions(-DLIBSTDAUDIO_BACKEND_COREAUDIO)
+  set(CMAKE_EXE_LINKER_FLAGS "-framework CoreAudio")
 else()
   add_definitions(-DLIBSTDAUDIO_BACKEND_NONE)
 endif()
