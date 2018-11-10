@@ -5,7 +5,18 @@
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
-device::device() {}
+class _device_impl {};
+
+namespace {
+  class _null_device_impl : public _device_impl {
+  };
+}
+
+device::device()
+  : _impl{new _null_device_impl} {
+}
+
+device::~device() = default;
 
 LIBSTDAUDIO_NAMESPACE_END
 
