@@ -6,9 +6,11 @@ project(libstdaudio)
 
 set(CMAKE_CXX_STANDARD 17)
 
-if (APPLE)
-  add_definitions(-DLIBSTDAUDIO_HAS_BACKEND -DLIBSTDAUDIO_BACKEND_COREAUDIO)
-endif (APPLE)
+if(APPLE)
+  add_definitions(-DLIBSTDAUDIO_BACKEND_COREAUDIO)
+else()
+  add_definitions(-DLIBSTDAUDIO_BACKEND_NONE)
+endif()
 
 include_directories(include)
 

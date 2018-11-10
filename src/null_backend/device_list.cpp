@@ -3,7 +3,7 @@
 
 #include "device_list.h"
 
-#ifndef LIBSTDAUDIO_HAS_BACKEND
+#ifdef LIBSTDAUDIO_BACKEND_NONE
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // Dummy implementation for platforms that do not support any audio devices
@@ -19,4 +19,4 @@ device_list& get_output_device_list() {
 }
 
 LIBSTDAUDIO_NAMESPACE_END
-#endif // LIBSTDAUDIO_HAS_BACKEND
+#endif // LIBSTDAUDIO_BACKEND_NONE
