@@ -16,6 +16,10 @@ device::device()
   : _impl{new _null_device_impl} {
 }
 
+void device::connect(device::callback) {
+  // TODO
+}
+
 device::~device() = default;
 
 LIBSTDAUDIO_NAMESPACE_END
