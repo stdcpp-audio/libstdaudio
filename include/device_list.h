@@ -9,12 +9,6 @@ LIBSTDAUDIO_NAMESPACE_BEGIN
 
 class device_list;
 
-/** Returns the current default audio input device. */
-device get_input_device();
-
-/** Returns the current default audio output device. */
-device get_output_device();
-
 /** Returns the program-wide list of currently available audio input devices. */
 device_list& get_input_device_list();
 

@@ -60,5 +60,13 @@ void device::process() {
 
 device::~device() = default;
 
+device get_input_device() {
+  return {};
+}
+
+device get_output_device() {
+  return {};
+}
+
 LIBSTDAUDIO_NAMESPACE_END
 

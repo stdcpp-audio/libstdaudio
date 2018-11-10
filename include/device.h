@@ -50,4 +50,10 @@ private:
   unique_ptr<_device_impl> _impl;
 };
 
+/** Returns the current default audio input device. */
+device get_input_device();
+
+/** Returns the current default audio output device. */
+device get_output_device();
+
 LIBSTDAUDIO_NAMESPACE_END
