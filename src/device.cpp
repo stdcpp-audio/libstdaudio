@@ -12,15 +12,19 @@ public:
 
   virtual ~_device_impl() = default;
 
-  void connect(device::callback& cb) {
-    _cb = &cb;
+  void connect(const device::callback& cb) {
+    _cb = cb;
+  }
+
+  void connect(device::callback&& cb) {
+    _cb = std::move(cb);
   }
 
   virtual void process() = 0;
 
 protected:
   device& _owner;
-  device::callback* _cb {nullptr};
+  device::callback _cb;
 };
 
 namespace {
@@ -32,8 +36,8 @@ namespace {
   private:
     void process() override {
       buffer_list empty_bl;
-      if (_cb && *_cb)
-        std::invoke(*_cb, _owner, empty_bl);
+      if (_cb)
+        std::invoke(_cb, _owner, empty_bl);
     }
   };
 }
@@ -42,8 +46,12 @@ device::device()
   : _impl{new _null_device_impl{*this}} {
 }
 
-void device::connect(device::callback& cb) {
+void device::connect(const device::callback& cb) {
   _impl->connect(cb);
+}
+
+void device::connect(device::callback&& cb) {
+  _impl->connect(std::move(cb));
 }
 
 void device::process() {
