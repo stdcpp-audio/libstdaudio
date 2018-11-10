@@ -31,7 +31,7 @@ public:
    *  will be disconnected.
    *  This overload copies the callback into the device.
    */
-   void connect(const callback&);
+  void connect(const callback&);
 
   /** Connect a callback to the device. If the device is polling, call device::process()
    *  to cause the device to call the callback. Otherwise, the callback will be
@@ -41,11 +41,10 @@ public:
    */
   void connect(callback&&);
 
-
   /** Call the callback once on the current thread, passing in the current
-    * processing buffer.
-    */
-   void process();
+   *  processing buffer.
+   */
+  void process();
 
 private:
   unique_ptr<_device_impl> _impl;
