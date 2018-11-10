@@ -8,10 +8,16 @@ set(CMAKE_CXX_STANDARD 17)
 
 include_directories(include)
 
-add_library(libstdaudio include/audio.h include/device.h include/config.h test/device_test.cpp test/test_main.cpp src/device.cpp include/buffer_list.h src/buffer_list.cpp test/buffer_list_test.cpp)
+add_library(libstdaudio
+  include/audio.h include/config.h
+  include/device.h include/buffer_list.h include/device_list.h
+  src/device.cpp src/buffer_list.cpp src/device_list.cpp)
 
 add_executable(white_noise examples/white_noise.cpp)
 target_link_libraries(white_noise libstdaudio)
+
+add_executable(print_devices examples/print_devices.cpp)
+target_link_libraries(print_devices libstdaudio)
 
 add_executable(test test/test_main.cpp test/device_test.cpp test/buffer_list_test.cpp)
 target_link_libraries(test libstdaudio)

@@ -1,6 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
+#pragma once
 #include <memory>
 #include <functional>
 #include "config.h"

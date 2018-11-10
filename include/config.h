@@ -1,5 +1,9 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#define LIBSTDAUDIO_NAMESPACE_BEGIN namespace std::experimental::audio {
+#pragma once
+
+#define LIBSTDAUDIO_NAMESPACE std::experimental::audio
+
+#define LIBSTDAUDIO_NAMESPACE_BEGIN namespace LIBSTDAUDIO_NAMESPACE {
 #define LIBSTDAUDIO_NAMESPACE_END   }

@@ -1,6 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
+#pragma once
 #include "config.h"
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
