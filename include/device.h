@@ -29,7 +29,12 @@ public:
    *  automatically called on the audio thread. Any previously connected callbacks
    *  will be disconnected.
    */
-   void connect(callback);
+   void connect(callback&);
+
+   /** Call the callback once on the current thread, passing in the current
+    * processing buffer.
+    */
+   void process();
 
 private:
   unique_ptr<_device_impl> _impl;
