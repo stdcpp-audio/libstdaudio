@@ -56,8 +56,16 @@ namespace {
 
   class _coreaudio_device_impl : public _device_impl {
   public:
-    explicit _coreaudio_device_impl(string name)
-      : _name(move(name)) {
+    explicit _coreaudio_device_impl(string name, _coreaudio_stream_config config)
+      : _name(move(name)), _config(config) {
+    }
+
+    bool is_input() const noexcept override {
+      return _config.input_config.mNumberBuffers != 0;
+    }
+
+    bool is_output() const noexcept override {
+      return _config.output_config.mNumberBuffers != 0;
     }
 
   private:
@@ -80,30 +88,30 @@ namespace {
       return cde;
     }
 
-    auto get_input_device_list_impl() {
+    template <typename Condition>
+    auto get_device_list_impl(Condition condition) {
       forward_list<device> devices;
       const auto device_ids = _get_device_ids();
 
       for (const auto device_id : device_ids) {
         auto device_from_id = _get_device(device_id);
-        // TODO: check it's an input device
-        devices.push_front(move(device_from_id));
+        if (condition(device_from_id))
+          devices.push_front(move(device_from_id));
       }
 
       return devices;
     }
 
+    auto get_input_device_list_impl() {
+      return get_device_list_impl([](const device& d){
+        return d.is_input();
+      });
+    }
+
     auto get_output_device_list_impl() {
-      forward_list<device> devices;
-      const auto device_ids = _get_device_ids();
-
-      for (const auto device_id : device_ids) {
-        auto device_from_id = _get_device(device_id);
-        // TODO: check it's an output device
-        devices.push_front(move(device_from_id));
-      }
-
-      return devices;
+      return get_device_list_impl([](const device& d){
+        return d.is_output();
+      });
     }
 
   private:
@@ -138,7 +146,9 @@ namespace {
 
     static device _get_device(AudioDeviceID device_id) {
       string name = _get_device_name(device_id);
-      return _make_device_with_impl<_coreaudio_device_impl>(move(name));
+      auto config = _get_device_io_stream_config(device_id);
+
+      return _make_device_with_impl<_coreaudio_device_impl>(move(name), config);
     }
 
     static string _get_device_name(AudioDeviceID device_id) {

@@ -31,6 +31,12 @@ public:
    */
   string_view name() const;
 
+  /** Returns true if the device provides input buffers. */
+  bool is_input() const noexcept;
+
+  /** Returns true if the device provides output buffers. */
+  bool is_output() const noexcept;
+
   /** Audio callback type. */
   using callback = function<void(device&, buffer_list&)>;
 

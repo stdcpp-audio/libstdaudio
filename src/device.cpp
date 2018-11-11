@@ -18,6 +18,14 @@ namespace {
       if (_cb)
         invoke(_cb, owner, empty_bl);
     }
+
+    bool is_input() const noexcept override {
+      return false;
+    }
+
+    bool is_output() const noexcept override {
+      return false;
+    }
   };
 }
 
@@ -31,6 +39,14 @@ device::~device() = default;
 
 string_view device::name() const {
   return _impl->name();
+}
+
+bool device::is_input() const noexcept {
+  return _impl->is_input();
+}
+
+bool device::is_output() const noexcept {
+  return _impl->is_output();
 }
 
 void device::connect(const device::callback& cb) {

@@ -11,6 +11,8 @@ public:
   virtual ~_device_impl() = default;
 
   virtual string_view name() const = 0;
+  virtual bool is_input() const noexcept = 0;
+  virtual bool is_output() const noexcept = 0;
 
   void connect(const device::callback& cb) {
     _cb = cb;

@@ -11,6 +11,12 @@ TEST_CASE( "Null device name", "[device]") {
   REQUIRE(d.name().empty());
 }
 
+TEST_CASE( "Null device has no input/output", "[device]") {
+  audio::device d;
+  REQUIRE(!d.is_input());
+  REQUIRE(!d.is_output());
+}
+
 TEST_CASE( "Null device calling callback", "[device]") {
   int cb_called = 0;
 
