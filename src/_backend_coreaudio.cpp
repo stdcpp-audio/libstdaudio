@@ -60,6 +60,10 @@ namespace {
       : _device_id(device_id), _name(move(name)), _config(config) {
     }
 
+    ~_coreaudio_device_impl() {
+      _stop();
+    }
+
 private:
     bool is_input() const noexcept override {
       return _config.input_config.mNumberBuffers != 0;
@@ -70,23 +74,9 @@ private:
     }
 
     void connect(device::callback cb) override {
-      // TODO: what happens if you call this repeatedly?
+      // TODO: what happens if this is not the first call to connect?
       _user_callback = move(cb);
-
-      if (!_running) {
-        if (!_coreaudio_util::check_error(AudioDeviceCreateIOProcID(
-          _device_id, _device_callback, nullptr, &_proc_id)))
-          return;
-
-        if (!_coreaudio_util::check_error(AudioDeviceStart(
-          _device_id, _device_callback))) {
-          _coreaudio_util::check_error(AudioDeviceDestroyIOProcID(
-            _device_id, _proc_id));
-          _proc_id = {};
-        }
-
-        _running = true;
-      }
+      _start();
     }
 
     void process(device& owner) override {
@@ -98,6 +88,39 @@ private:
 
     string_view name() const override {
       return _name;
+    }
+
+    void _start() {
+      if (!_running) {
+        // TODO: ProcID is a resource; wrap it into an RAII guard
+        if (!_coreaudio_util::check_error(AudioDeviceCreateIOProcID(
+          _device_id, _device_callback, nullptr, &_proc_id)))
+          return;
+
+        if (!_coreaudio_util::check_error(AudioDeviceStart(
+          _device_id, _device_callback))) {
+          _coreaudio_util::check_error(AudioDeviceDestroyIOProcID(
+            _device_id, _proc_id));
+
+          _proc_id = {};
+          return;
+        }
+
+        _running = true;
+      }
+    }
+
+    void _stop() {
+      if (_running) {
+        _coreaudio_util::check_error(AudioDeviceStop(
+          _device_id, _device_callback));
+
+        _coreaudio_util::check_error(AudioDeviceDestroyIOProcID(
+          _device_id, _proc_id));
+
+        _proc_id = {};
+        _running = false;
+      }
     }
 
     static OSStatus _device_callback(AudioObjectID           inDevice,
