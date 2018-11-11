@@ -50,14 +50,14 @@ namespace {
   };
 
   struct _coreaudio_stream_config {
-    AudioBufferList input_config;
-    AudioBufferList output_config;
+    AudioBufferList input_config = {0};
+    AudioBufferList output_config = {0};
   };
 
   class _coreaudio_device_impl : public _device_impl {
   public:
-    explicit _coreaudio_device_impl(string name, _coreaudio_stream_config config)
-      : _name(move(name)), _config(config) {
+    explicit _coreaudio_device_impl(AudioObjectID device_id, string name, _coreaudio_stream_config config)
+      : _device_id(device_id), _name(move(name)), _config(config) {
     }
 
 private:
@@ -70,22 +70,52 @@ private:
     }
 
     void connect(device::callback cb) override {
-      // TODO: start coreaudio device
-      _cb = move(cb);
+      // TODO: what happens if you call this repeatedly?
+      _user_callback = move(cb);
+
+      if (!_running) {
+        if (!_coreaudio_util::check_error(AudioDeviceCreateIOProcID(
+          _device_id, _device_callback, nullptr, &_proc_id)))
+          return;
+
+        if (!_coreaudio_util::check_error(AudioDeviceStart(
+          _device_id, _device_callback))) {
+          _coreaudio_util::check_error(AudioDeviceDestroyIOProcID(
+            _device_id, _proc_id));
+          _proc_id = {};
+        }
+
+        _running = true;
+      }
     }
 
     void process(device& owner) override {
       // TODO: pass in actual buffer list instead of empty one
+      // TODO: what to do if the device is not running/there is no buffer?
       buffer_list bl;
-      _cb(owner, bl);
+      _user_callback(owner, bl);
     }
 
     string_view name() const override {
       return _name;
     }
 
+    static OSStatus _device_callback(AudioObjectID           inDevice,
+                                     const AudioTimeStamp*   inNow,
+                                     const AudioBufferList*  inInputData,
+                                     const AudioTimeStamp*   inInputTime,
+                                     AudioBufferList*        outOutputData,
+                                     const AudioTimeStamp*   inOutputTime,
+                                     void* __nullable        inClientData) {
+      // TODO: convert AudioBufferList into device::buffer_list and pass to _user_callback
+    }
+
+    AudioObjectID _device_id = {};
+    AudioDeviceIOProcID _proc_id = {};
+    bool _running = false;
     string _name;
     _coreaudio_stream_config _config;
+    device::callback _user_callback;
   };
 
   class _coreaudio_device_enumerator {
@@ -172,7 +202,7 @@ private:
       string name = _get_device_name(device_id);
       auto config = _get_device_io_stream_config(device_id);
 
-      return _make_device_with_impl<_coreaudio_device_impl>(move(name), config);
+      return _make_device_with_impl<_coreaudio_device_impl>(device_id, move(name), config);
     }
 
     static string _get_device_name(AudioDeviceID device_id) {

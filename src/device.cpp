@@ -30,6 +30,8 @@ namespace {
       if (_cb)
         invoke(_cb, owner, empty_bl);
     }
+
+    device::callback _cb;
   };
 }
 

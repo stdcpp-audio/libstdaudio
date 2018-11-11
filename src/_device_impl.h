@@ -14,9 +14,6 @@ public:
   virtual bool is_output() const noexcept = 0;
   virtual void connect(device::callback cb) = 0;
   virtual void process(device& owner) = 0;
-
-protected:
-  device::callback _cb;
 };
 
 template <typename Impl, typename... Args>
