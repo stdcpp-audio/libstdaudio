@@ -156,7 +156,7 @@ namespace {
     static string _get_device_name(AudioDeviceID device_id) {
       AudioObjectPropertyAddress pa = {
         kAudioDevicePropertyDeviceName,
-        kAudioObjectPropertyScopeWildcard,
+        kAudioObjectPropertyScopeGlobal,
         kAudioObjectPropertyElementMaster
       };
 
