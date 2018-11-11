@@ -74,7 +74,6 @@ private:
     }
 
     void connect(device::callback cb) override {
-      // TODO: what happens if this is not the first call to connect?
       _user_callback = move(cb);
       _start();
     }
@@ -84,14 +83,11 @@ private:
     }
 
     void wait() override {
+      // no-op
     }
 
     void process(device& owner) override {
-      // TODO: this should be a no-op because coreaudio is non-polling.
-      // (currently keeping this around because the actual device callback
-      // doesn't call the user callback yet.)
-      buffer_list bl;
-      _user_callback(owner, bl);
+      // no-op
     }
 
     string_view name() const override {
