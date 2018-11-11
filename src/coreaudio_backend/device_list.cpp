@@ -25,27 +25,27 @@ namespace {
     }
 
   private:
-    static std::string _format_error(OSStatus error)
+    static string _format_error(OSStatus error)
     {
       char c[4];
       *(uint32_t *)(c) = CFSwapInt32HostToBig(uint32_t(error));
       if (_is_four_character_code(c))
-        return std::string{"\'"} + c + "\'";
+        return string{"\'"} + c + "\'";
 
-      return std::to_string(error);
+      return to_string(error);
     }
 
     static bool _is_four_character_code(char* c) {
       for (int i : {0, 1, 2, 3})
-        if (!std::isprint(c[i]))
+        if (!isprint(c[i]))
           return false;
 
       return true;
     }
 
-    static void _log_message(const std::string& s) {
+    static void _log_message(const string& s) {
       // TODO: only do this in DEBUG
-      std::cerr << "coreaudio_backend error: " << s << std::endl;
+      cerr << "coreaudio_backend error: " << s << endl;
     }
   };
 
@@ -68,26 +68,26 @@ namespace {
     }
 
     auto get_input_device_list_impl() {
-      std::forward_list<device> devices;
+      forward_list<device> devices;
       const auto device_ids = _get_device_ids();
 
       for (const auto device_id : device_ids) {
         auto device_from_id = _get_device(device_id);
         // TODO: check it's an input device
-        devices.push_front(std::move(device_from_id));
+        devices.push_front(move(device_from_id));
       }
 
       return devices;
     }
 
     auto get_output_device_list_impl() {
-      std::forward_list<device> devices;
+      forward_list<device> devices;
       const auto device_ids = _get_device_ids();
 
       for (const auto device_id : device_ids) {
         auto device_from_id = _get_device(device_id);
         // TODO: check it's an output device
-        devices.push_front(std::move(device_from_id));
+        devices.push_front(move(device_from_id));
       }
 
       return devices;
@@ -96,7 +96,7 @@ namespace {
   private:
     _coreaudio_device_enumerator() = default;
 
-    static std::vector<AudioDeviceID> _get_device_ids() {
+    static vector<AudioDeviceID> _get_device_ids() {
       AudioObjectPropertyAddress pa = {
         kAudioHardwarePropertyDevices,
         kAudioObjectPropertyScopeGlobal,
@@ -113,7 +113,7 @@ namespace {
       if (device_count == 0)
         return {};
 
-      std::vector<AudioDeviceID> device_ids(device_count);
+      vector<AudioDeviceID> device_ids(device_count);
 
       if (!_coreaudio_util::check_error(AudioObjectGetPropertyData(
         kAudioObjectSystemObject, &pa,

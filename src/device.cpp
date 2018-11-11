@@ -20,7 +20,7 @@ namespace {
     void process() override {
       buffer_list empty_bl;
       if (_cb)
-        std::invoke(_cb, _owner, empty_bl);
+        invoke(_cb, _owner, empty_bl);
     }
   };
 }
@@ -42,7 +42,7 @@ void device::connect(const device::callback& cb) {
 }
 
 void device::connect(device::callback&& cb) {
-  _impl->connect(std::move(cb));
+  _impl->connect(move(cb));
 }
 
 void device::process() {

@@ -29,10 +29,10 @@ public:
   /** Returns the name of the device. If the device is a null-device, this is
    *  an empty string.
   */
-  std::string_view name() const;
+  string_view name() const;
 
   /** Audio callback type. */
-  using callback = std::function<void(device&, buffer_list&)>;
+  using callback = function<void(device&, buffer_list&)>;
 
   /** Connect a callback to the device. If the device is polling, call device::process()
    *  to cause the device to call the callback. Otherwise, the callback will be

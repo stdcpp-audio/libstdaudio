@@ -20,7 +20,7 @@ public:
   }
 
   void connect(device::callback&& cb) {
-    _cb = std::move(cb);
+    _cb = move(cb);
   }
 
   virtual void process() = 0;

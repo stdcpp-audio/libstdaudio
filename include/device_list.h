@@ -21,7 +21,7 @@ device_list& get_output_device_list();
  */
 class device_list {
 private:
-  using _underlying_container = std::forward_list<device>;
+  using _underlying_container = forward_list<device>;
 
 public:
   /** A forward iterator whose value type is audio::device. */
@@ -36,7 +36,7 @@ public:
   iterator end() noexcept { return _dlist.end(); }
 
 private:
-  device_list(_underlying_container&& dlist) : _dlist(std::move(dlist)) {}
+  device_list(_underlying_container&& dlist) : _dlist(move(dlist)) {}
   friend device_list& get_input_device_list();
   friend device_list& get_output_device_list();
   _underlying_container _dlist;
