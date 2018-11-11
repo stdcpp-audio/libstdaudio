@@ -1,7 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "_backend_null.h"
+#include "device_list.h"
 
 #ifdef LIBSTDAUDIO_BACKEND_NONE
 LIBSTDAUDIO_NAMESPACE_BEGIN
