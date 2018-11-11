@@ -67,18 +67,30 @@ namespace {
       return cde;
     }
 
-    std::forward_list<device> get_input_device_list_impl() {
+    auto get_input_device_list_impl() {
+      std::forward_list<device> devices;
       const auto device_ids = _get_device_ids();
 
-      // TODO: implement
-      return {};
+      for (const auto device_id : device_ids) {
+        auto device_from_id = _get_device(device_id);
+        // TODO: check it's an input device
+        devices.push_front(std::move(device_from_id));
+      }
+
+      return devices;
     }
 
-    std::forward_list<device> get_output_device_list_impl() {
+    auto get_output_device_list_impl() {
+      std::forward_list<device> devices;
       const auto device_ids = _get_device_ids();
 
-      // TODO: implement
-      return {};
+      for (const auto device_id : device_ids) {
+        auto device_from_id = _get_device(device_id);
+        // TODO: check it's an output device
+        devices.push_front(std::move(device_from_id));
+      }
+
+      return devices;
     }
 
   private:
@@ -109,6 +121,11 @@ namespace {
         return {};
 
       return device_ids;
+    }
+
+    static device _get_device(AudioDeviceID device_id) {
+      // TODO: add actual device properties
+      return {};
     }
   };
 }
