@@ -28,7 +28,7 @@ public:
 
   /** Returns the name of the device. If the device is a null-device, this is
    *  an empty string.
-  */
+   */
   string_view name() const;
 
   /** Audio callback type. */
