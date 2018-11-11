@@ -19,6 +19,9 @@ public:
    */
   device();
 
+  /** Move constructor. */
+  device(device&&);
+
   /** Destructor. */
   ~device();
 

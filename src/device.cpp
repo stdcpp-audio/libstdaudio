@@ -25,6 +25,10 @@ device::device()
   : _impl{new _null_device_impl{*this}} {
 }
 
+device::device(device&&) = default;
+
+device::~device() = default;
+
 void device::connect(const device::callback& cb) {
   _impl->connect(cb);
 }
@@ -36,8 +40,6 @@ void device::connect(device::callback&& cb) {
 void device::process() {
   _impl->process();
 }
-
-device::~device() = default;
 
 device get_input_device() {
   return {};
