@@ -49,6 +49,11 @@ namespace {
     }
   };
 
+  struct _coreaudio_stream_config {
+    AudioBufferList input_config;
+    AudioBufferList output_config;
+  };
+
   class _coreaudio_device_impl : public _device_impl {
   public:
     explicit _coreaudio_device_impl(string name)
@@ -65,6 +70,7 @@ namespace {
     }
 
     string _name;
+    _coreaudio_stream_config _config;
   };
 
   class _coreaudio_device_enumerator {
@@ -153,6 +159,37 @@ namespace {
         return {};
 
       return name_buffer;
+    }
+
+    static _coreaudio_stream_config _get_device_io_stream_config(AudioDeviceID device_id) {
+      return {
+        _get_device_stream_config(device_id, kAudioDevicePropertyScopeInput),
+        _get_device_stream_config(device_id, kAudioDevicePropertyScopeOutput)
+      };
+    }
+
+    static AudioBufferList _get_device_stream_config(AudioDeviceID device_id, AudioObjectPropertyScope scope) {
+      AudioObjectPropertyAddress pa = {
+        kAudioDevicePropertyStreamConfiguration,
+        scope,
+        kAudioObjectPropertyElementMaster
+      };
+
+      uint32_t data_size = 0;
+      if (!_coreaudio_util::check_error(AudioObjectGetPropertyDataSize(
+        device_id, &pa, 0, nullptr, &data_size)))
+        return {0};
+
+      if (data_size != sizeof(AudioBufferList))
+        return {0};
+
+      AudioBufferList stream_config;
+
+      if (!_coreaudio_util::check_error(AudioObjectGetPropertyData(
+        device_id, &pa, 0, nullptr, &data_size, &stream_config)))
+        return {0};
+
+      return stream_config;
     }
   };
 }
