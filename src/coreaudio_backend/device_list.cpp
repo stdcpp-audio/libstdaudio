@@ -110,13 +110,13 @@ namespace {
         kAudioObjectPropertyElementMaster
       };
 
-      uint32_t dataSize = 0;
+      uint32_t data_size = 0;
       if (!_coreaudio_util::check_error(AudioObjectGetPropertyDataSize(
         kAudioObjectSystemObject, &pa,
-        0, nullptr, &dataSize)))
+        0, nullptr, &data_size)))
         return {};
 
-      const auto device_count = static_cast<uint32_t>(dataSize / sizeof(AudioDeviceID));
+      const auto device_count = static_cast<uint32_t>(data_size / sizeof(AudioDeviceID));
       if (device_count == 0)
         return {};
 
@@ -124,7 +124,7 @@ namespace {
 
       if (!_coreaudio_util::check_error(AudioObjectGetPropertyData(
         kAudioObjectSystemObject, &pa,
-        0, nullptr, &dataSize, device_ids.data())))
+        0, nullptr, &data_size, device_ids.data())))
         return {};
 
       return device_ids;
