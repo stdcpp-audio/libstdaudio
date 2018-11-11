@@ -8,9 +8,6 @@ LIBSTDAUDIO_NAMESPACE_BEGIN
 
 class _device_impl {
 public:
-  _device_impl(device& owner)
-      : _owner(owner) {}
-
   virtual ~_device_impl() = default;
 
   virtual string_view name() const = 0;
@@ -23,11 +20,17 @@ public:
     _cb = move(cb);
   }
 
-  virtual void process() = 0;
+  virtual void process(device& owner) = 0;
 
 protected:
-  device& _owner;
   device::callback _cb;
 };
+
+template <typename Impl, typename... Args>
+device _make_device_with_impl(Args... args) {
+  device new_device;
+  new_device._impl = make_unique<Impl>(forward<Args...>(args...));
+  return new_device;
+}
 
 LIBSTDAUDIO_NAMESPACE_END

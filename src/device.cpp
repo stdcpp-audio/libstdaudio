@@ -8,28 +8,24 @@ LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
   class _null_device_impl : public _device_impl {
-  public:
-    _null_device_impl(device& owner)
-      : _device_impl(owner) {}
-
   private:
     string_view name() const override {
       return {};
     }
 
-    void process() override {
+    void process(device& owner) override {
       buffer_list empty_bl;
       if (_cb)
-        invoke(_cb, _owner, empty_bl);
+        invoke(_cb, owner, empty_bl);
     }
   };
 }
 
 device::device()
-  : _impl{new _null_device_impl{*this}} {
+  : _impl{make_unique<_null_device_impl>()} {
 }
 
-device::device(device&&) = default;
+device::device(device&&) noexcept = default;
 
 device::~device() = default;
 
@@ -46,7 +42,7 @@ void device::connect(device::callback&& cb) {
 }
 
 void device::process() {
-  _impl->process();
+  _impl->process(*(this));
 }
 
 device get_input_device() {

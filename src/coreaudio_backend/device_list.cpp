@@ -50,13 +50,14 @@ namespace {
   };
 
   class _coreaudio_device_impl : public _device_impl {
-  public:
-    _coreaudio_device_impl(device& owner)
-    : _device_impl(owner) {}
-
   private:
-    void process() override {
+    void process(device& owner) override {
       // TODO: implement
+    }
+
+    string_view name() const override {
+      // TODO: get actual device name
+      return "coreaudio device";
     }
   };
 
@@ -124,8 +125,9 @@ namespace {
     }
 
     static device _get_device(AudioDeviceID device_id) {
-      // TODO: add actual device properties
+      _coreaudio_device_impl c;
       return {};
+      //return _make_device_with_impl<_coreaudio_device_impl>();
     }
   };
 }
