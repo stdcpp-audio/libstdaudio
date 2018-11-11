@@ -4,22 +4,19 @@
 #include <iostream>
 #include <audio.h>
 
+using namespace std::experimental;
+
+void print_device_list(audio::device_list& list) {
+  int i = 0;
+  for (auto& item : list) {
+    std::cout << "- device " << i++ << ": \"" << item.name() << "\"\n";
+  }
+}
+
 int main() {
-  using namespace std::experimental;
+  std::cout << "Input devices:\n==============\n";
+  print_device_list(audio::get_input_device_list());
 
-  std::cout << "Input devices:\n"
-               "==============\n";
-
-  auto& input_devices = audio::get_input_device_list();
-  for (auto& input_device : input_devices) {
-    // TODO
-  }
-
-  std::cout << "\nOutput devices:\n"
-               "===============\n";
-
-  auto& output_devices = audio::get_output_device_list();
-  for (auto& output_device : output_devices) {
-    // TODO
-  }
+  std::cout << "\nOutput devices:\n===============\n";
+  print_device_list(audio::get_output_device_list());
 }
