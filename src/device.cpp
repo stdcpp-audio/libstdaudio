@@ -13,6 +13,10 @@ namespace {
       : _device_impl(owner) {}
 
   private:
+    string_view name() const override {
+      return {};
+    }
+
     void process() override {
       buffer_list empty_bl;
       if (_cb)
@@ -28,6 +32,10 @@ device::device()
 device::device(device&&) = default;
 
 device::~device() = default;
+
+string_view device::name() const {
+  return _impl->name();
+}
 
 void device::connect(const device::callback& cb) {
   _impl->connect(cb);

@@ -4,6 +4,7 @@
 #pragma once
 #include <memory>
 #include <functional>
+#include <string_view>
 #include "config.h"
 #include "buffer_list.h"
 
@@ -24,6 +25,11 @@ public:
 
   /** Destructor. */
   ~device();
+
+  /** Returns the name of the device. If the device is a null-device, this is
+   *  an empty string.
+  */
+  std::string_view name() const;
 
   /** Audio callback type. */
   using callback = std::function<void(device&, buffer_list&)>;

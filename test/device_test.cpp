@@ -6,6 +6,11 @@
 
 using namespace std::experimental;
 
+TEST_CASE( "Null device name", "[device]") {
+  audio::device d;
+  REQUIRE(d.name().empty());
+}
+
 TEST_CASE( "Null device calling callback", "[device]") {
   int cb_called = 0;
 
