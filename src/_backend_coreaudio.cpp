@@ -60,6 +60,7 @@ namespace {
       : _name(move(name)), _config(config) {
     }
 
+private:
     bool is_input() const noexcept override {
       return _config.input_config.mNumberBuffers != 0;
     }
@@ -68,7 +69,16 @@ namespace {
       return _config.output_config.mNumberBuffers != 0;
     }
 
-  private:
+    void connect(const device::callback& cb) override {
+      // TODO: start coreaudio device
+      _cb = cb;
+    }
+
+    void connect(device::callback&& cb) override {
+      // TODO: start coreaudio device
+      _cb = move(cb);
+    }
+
     void process(device& owner) override {
       // TODO: pass in actual buffer list instead of empty one
       buffer_list bl;

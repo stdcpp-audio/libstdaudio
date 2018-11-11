@@ -13,18 +13,26 @@ namespace {
       return {};
     }
 
-    void process(device& owner) override {
-      buffer_list empty_bl;
-      if (_cb)
-        invoke(_cb, owner, empty_bl);
-    }
-
     bool is_input() const noexcept override {
       return false;
     }
 
     bool is_output() const noexcept override {
       return false;
+    }
+
+    void connect(const device::callback& cb) override {
+      _cb = cb;
+    }
+
+    void connect(device::callback&& cb) override {
+      _cb = move(cb);
+    }
+
+    void process(device& owner) override {
+      buffer_list empty_bl;
+      if (_cb)
+        invoke(_cb, owner, empty_bl);
     }
   };
 }
