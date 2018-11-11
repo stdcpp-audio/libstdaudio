@@ -70,7 +70,9 @@ namespace {
 
   private:
     void process(device& owner) override {
-      // TODO: implement
+      // TODO: pass in actual buffer list instead of empty one
+      buffer_list bl;
+      _cb(owner, bl);
     }
 
     string_view name() const override {

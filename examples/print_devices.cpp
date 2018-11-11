@@ -6,10 +6,16 @@
 
 using namespace std::experimental;
 
+void print_device_info(audio::device& d, audio::buffer_list& bl) {
+  std::cout << "- \"" << d.name() << "\"\n";
+  std::cout << "  -> " << bl.num_input_buffers() << " input buffers\n";
+  std::cout << "  -> " << bl.num_output_buffers() << " output buffers\n";
+};
+
 void print_device_list(audio::device_list& list) {
-  int i = 0;
   for (auto& item : list) {
-    std::cout << "- device " << i++ << ": \"" << item.name() << "\"\n";
+    item.connect(&print_device_info);
+    item.process();
   }
 }
 
