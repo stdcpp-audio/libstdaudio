@@ -224,22 +224,24 @@ namespace {
 }
 
 device get_input_device() {
-  auto& enumerator = _coreaudio_device_enumerator::get_instance();
-  return enumerator.get_default_io_device(kAudioHardwarePropertyDefaultInputDevice);
+  return _coreaudio_device_enumerator::get_instance().get_default_io_device(
+    kAudioHardwarePropertyDefaultInputDevice);
 }
 
 device get_output_device() {
-  auto& enumerator = _coreaudio_device_enumerator::get_instance();
-  return enumerator.get_default_io_device(kAudioHardwarePropertyDefaultOutputDevice);
+  return _coreaudio_device_enumerator::get_instance().get_default_io_device(
+    kAudioHardwarePropertyDefaultOutputDevice);
 }
 
 device_list& get_input_device_list() {
+  // TODO: static device_list is not good, it means it will never get updated
   auto& enumerator = _coreaudio_device_enumerator::get_instance();
   static device_list in_devices{enumerator.get_input_device_list_impl()};
   return in_devices;
 }
 
 device_list& get_output_device_list() {
+  // TODO: static device_list is not good, it means it will never get updated
   auto& enumerator = _coreaudio_device_enumerator::get_instance();
   static device_list out_devices{enumerator.get_output_device_list_impl()};
   return out_devices;
