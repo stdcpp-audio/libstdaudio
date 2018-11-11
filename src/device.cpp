@@ -21,11 +21,7 @@ namespace {
       return false;
     }
 
-    void connect(const device::callback& cb) override {
-      _cb = cb;
-    }
-
-    void connect(device::callback&& cb) override {
+    void connect(device::callback cb) override {
       _cb = move(cb);
     }
 
@@ -57,11 +53,7 @@ bool device::is_output() const noexcept {
   return _impl->is_output();
 }
 
-void device::connect(const device::callback& cb) {
-  _impl->connect(cb);
-}
-
-void device::connect(device::callback&& cb) {
+void device::connect(device::callback cb) {
   _impl->connect(move(cb));
 }
 

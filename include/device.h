@@ -44,17 +44,8 @@ public:
    *  to cause the device to call the callback. Otherwise, the callback will be
    *  automatically called on the audio thread. Any previously connected callbacks
    *  will be disconnected.
-   *  This overload copies the callback into the device.
    */
-  void connect(const callback&);
-
-  /** Connect a callback to the device. If the device is polling, call device::process()
-   *  to cause the device to call the callback. Otherwise, the callback will be
-   *  automatically called on the audio thread. Any previously connected callbacks
-   *  will be disconnected.
-   *  This overload moves the callback into the device.
-   */
-  void connect(callback&&);
+  void connect(callback);
 
   /** Call the callback once on the current thread, passing in the current
    *  processing buffer.

@@ -69,12 +69,7 @@ private:
       return _config.output_config.mNumberBuffers != 0;
     }
 
-    void connect(const device::callback& cb) override {
-      // TODO: start coreaudio device
-      _cb = cb;
-    }
-
-    void connect(device::callback&& cb) override {
+    void connect(device::callback cb) override {
       // TODO: start coreaudio device
       _cb = move(cb);
     }

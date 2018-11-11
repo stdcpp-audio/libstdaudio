@@ -12,8 +12,7 @@ public:
   virtual string_view name() const = 0;
   virtual bool is_input() const noexcept = 0;
   virtual bool is_output() const noexcept = 0;
-  virtual void connect(const device::callback& cb) = 0;
-  virtual void connect(device::callback&& cb) = 0;
+  virtual void connect(device::callback cb) = 0;
   virtual void process(device& owner) = 0;
 
 protected:
