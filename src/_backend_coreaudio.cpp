@@ -1,7 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "device_list.h"
+#include "_backend_null.h"
 
 #ifdef LIBSTDAUDIO_BACKEND_COREAUDIO
 #include <cctype>
@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <AudioToolbox/AudioToolbox.h>
-#include "../_device_impl.h"
+#include "_device_impl.h"
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
