@@ -57,7 +57,7 @@ public:
 
 private:
   unique_ptr<_device_impl> _impl;
-  template <typename Impl, typename... Args>  friend device _make_device_with_impl(Args...);
+  template <typename Impl, typename... Args>  friend device _make_device_with_impl(Args&&...);
 };
 
 /** Returns the current default audio input device. */

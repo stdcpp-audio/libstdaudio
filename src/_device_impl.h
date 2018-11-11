@@ -27,9 +27,9 @@ protected:
 };
 
 template <typename Impl, typename... Args>
-device _make_device_with_impl(Args... args) {
+device _make_device_with_impl(Args&&... args) {
   device new_device;
-  new_device._impl = make_unique<Impl>(forward<Args...>(args...));
+  new_device._impl = make_unique<Impl>(forward<Args>(args)...);
   return new_device;
 }
 

@@ -126,8 +126,7 @@ namespace {
 
     static device _get_device(AudioDeviceID device_id) {
       _coreaudio_device_impl c;
-      return {};
-      //return _make_device_with_impl<_coreaudio_device_impl>();
+      return _make_device_with_impl<_coreaudio_device_impl>();
     }
   };
 }
