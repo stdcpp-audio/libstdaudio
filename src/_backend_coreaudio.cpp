@@ -90,6 +90,23 @@ namespace {
       return cde;
     }
 
+    device get_default_io_device(AudioObjectPropertySelector selector) {
+      AudioObjectPropertyAddress pa = {
+        selector,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster
+      };
+
+      AudioDeviceID device_id;
+      uint32_t data_size = sizeof(device_id);
+
+      if (!_coreaudio_util::check_error(AudioObjectGetPropertyData (
+        kAudioObjectSystemObject, &pa, 0, nullptr, &data_size, &device_id)))
+        return {};
+
+      return _get_device(device_id);
+    }
+
     template <typename Condition>
     auto get_device_list_impl(Condition condition) {
       forward_list<device> devices;
@@ -207,13 +224,13 @@ namespace {
 }
 
 device get_input_device() {
-  // TODO: implement
-  return {};
+  auto& enumerator = _coreaudio_device_enumerator::get_instance();
+  return enumerator.get_default_io_device(kAudioHardwarePropertyDefaultInputDevice);
 }
 
 device get_output_device() {
-  // TODO: implement
-  return {};
+  auto& enumerator = _coreaudio_device_enumerator::get_instance();
+  return enumerator.get_default_io_device(kAudioHardwarePropertyDefaultOutputDevice);
 }
 
 device_list& get_input_device_list() {
