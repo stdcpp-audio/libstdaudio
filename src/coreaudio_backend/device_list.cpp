@@ -50,15 +50,21 @@ namespace {
   };
 
   class _coreaudio_device_impl : public _device_impl {
+  public:
+    explicit _coreaudio_device_impl(string name)
+      : _name(move(name)) {
+    }
+
   private:
     void process(device& owner) override {
       // TODO: implement
     }
 
     string_view name() const override {
-      // TODO: get actual device name
-      return "coreaudio device";
+      return _name;
     }
+
+    string _name;
   };
 
   class _coreaudio_device_enumerator {
@@ -125,8 +131,28 @@ namespace {
     }
 
     static device _get_device(AudioDeviceID device_id) {
-      _coreaudio_device_impl c;
-      return _make_device_with_impl<_coreaudio_device_impl>();
+      string name = _get_device_name(device_id);
+      return _make_device_with_impl<_coreaudio_device_impl>(move(name));
+    }
+
+    static string _get_device_name(AudioDeviceID device_id) {
+      AudioObjectPropertyAddress pa = {
+        kAudioDevicePropertyDeviceName,
+        kAudioObjectPropertyScopeWildcard,
+        kAudioObjectPropertyElementMaster
+      };
+
+      uint32_t data_size = 0;
+      if (!_coreaudio_util::check_error(AudioObjectGetPropertyDataSize(
+        device_id, &pa, 0, nullptr, &data_size)))
+        return {};
+
+      char name_buffer[data_size];
+      if (!_coreaudio_util::check_error(AudioObjectGetPropertyData(
+        device_id, &pa, 0, nullptr, &data_size, name_buffer)))
+        return {};
+
+      return name_buffer;
     }
   };
 }
