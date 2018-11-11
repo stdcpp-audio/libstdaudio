@@ -247,5 +247,15 @@ device_list& get_output_device_list() {
   return out_devices;
 }
 
+int buffer_list::num_input_buffers() const noexcept {
+  // TODO: implement
+  return 0;
+}
+
+int buffer_list::num_output_buffers() const noexcept {
+  // TODO: implement
+  return 0;
+}
+
 LIBSTDAUDIO_NAMESPACE_END
 #endif // LIBSTDAUDIO_BACKEND_COREAUDIO
