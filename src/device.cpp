@@ -25,7 +25,17 @@ namespace {
       _cb = move(cb);
     }
 
+    bool is_polling() const noexcept override {
+      // the null device does not have a callback mechanism.
+      return true;
+    }
+
+    void wait() override {
+    }
+
     void process(device& owner) override {
+      // the current "process buffer" of the null device is always an empty buffer.
+      // TODO: maybe this should be a no-op? What is more consistent?
       buffer_list empty_bl;
       if (_cb)
         invoke(_cb, owner, empty_bl);
@@ -57,6 +67,14 @@ bool device::is_output() const noexcept {
 
 void device::connect(device::callback cb) {
   _impl->connect(move(cb));
+}
+
+bool device::is_polling() const noexcept {
+  return _impl->is_polling();
+}
+
+void device::wait() {
+  _impl->wait();
 }
 
 void device::process() {

@@ -40,15 +40,23 @@ public:
   /** Audio callback type. */
   using callback = function<void(device&, buffer_list&)>;
 
-  /** Connect a callback to the device. If the device is polling, call device::process()
-   *  to cause the device to call the callback. Otherwise, the callback will be
-   *  automatically called on the audio thread. Any previously connected callbacks
-   *  will be disconnected.
+  /** Connect a callback to the device. Disconnect any previous callbacks.
+   *  If the device is not polling, the callback will be automatically
+   *  called on the audio thread.
    */
   void connect(callback);
 
-  /** Call the callback once on the current thread, passing in the current
-   *  processing buffer.
+  /** If the device is polling, returns true. Otherwise, returns false. */
+  bool is_polling() const noexcept;
+
+  /** If the device is polling, blocks until there is a new processing
+   *  buffer available. Otherwise, does nothing.
+   */
+  void wait();
+
+  /** If the device is polling, calls the callback once on the current
+   *  thread, passing in the current processing buffer. Otherwise, does
+   *  nothing.
    */
   void process();
 

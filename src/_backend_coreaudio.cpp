@@ -79,9 +79,17 @@ private:
       _start();
     }
 
+    bool is_polling() const noexcept override {
+      return false;
+    }
+
+    void wait() override {
+    }
+
     void process(device& owner) override {
-      // TODO: pass in actual buffer list instead of empty one
-      // TODO: what to do if the device is not running/there is no buffer?
+      // TODO: this should be a no-op because coreaudio is non-polling.
+      // (currently keeping this around because the actual device callback
+      // doesn't call the user callback yet.)
       buffer_list bl;
       _user_callback(owner, bl);
     }
