@@ -206,6 +206,16 @@ namespace {
   };
 }
 
+device get_input_device() {
+  // TODO: implement
+  return {};
+}
+
+device get_output_device() {
+  // TODO: implement
+  return {};
+}
+
 device_list& get_input_device_list() {
   auto& enumerator = _coreaudio_device_enumerator::get_instance();
   static device_list in_devices{enumerator.get_input_device_list_impl()};

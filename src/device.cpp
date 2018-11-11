@@ -61,13 +61,5 @@ void device::process() {
   _impl->process(*(this));
 }
 
-device get_input_device() {
-  return {};
-}
-
-device get_output_device() {
-  return {};
-}
-
 LIBSTDAUDIO_NAMESPACE_END
 

@@ -8,6 +8,14 @@ LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // Dummy implementation for platforms that do not support any audio devices
 
+device get_input_device() {
+  return {};
+}
+
+device get_output_device() {
+  return {};
+}
+
 device_list& get_input_device_list() {
   static device_list in_devices{device_list::_underlying_container{}};
   return in_devices;
