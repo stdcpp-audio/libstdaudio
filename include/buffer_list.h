@@ -2,18 +2,18 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #pragma once
+#include <vector>
 #include "config.h"
+#include "buffer.h"
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
 /** A list of audio input or output buffers. */
 class buffer_list {
 public:
-  /** Returns the number of input buffers. */
-  int num_input_buffers() const noexcept;
-
-  /** Returns the number of output buffers. */
-  int num_output_buffers() const noexcept;
+  // TODO: use span instead of vector when available
+  vector<buffer> input_buffers;
+  vector<buffer> output_buffers;
 };
 
 LIBSTDAUDIO_NAMESPACE_END

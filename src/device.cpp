@@ -8,6 +8,11 @@ LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
   class _null_device_impl : public _device_impl {
+  public:
+    _null_device_impl(device& owner)
+      : _device_impl(owner) {
+    }
+
   private:
     string_view name() const override {
       return {};
@@ -21,8 +26,8 @@ namespace {
       return false;
     }
 
-    void connect(device::callback cb) override {
-      _cb = move(cb);
+    void connect(device::callback) override {
+      // TODO: insert assertion. Connecting a callback to a null device is a no-op
     }
 
     bool is_polling() const noexcept override {
@@ -33,20 +38,13 @@ namespace {
     void wait() override {
     }
 
-    void process(device& owner) override {
-      // the current "process buffer" of the null device is always an empty buffer.
-      // TODO: maybe this should be a no-op? What is more consistent?
-      buffer_list empty_bl;
-      if (_cb)
-        invoke(_cb, owner, empty_bl);
+    void process() override {
     }
-
-    device::callback _cb;
   };
 }
 
 device::device()
-  : _impl{make_unique<_null_device_impl>()} {
+  : _impl{make_unique<_null_device_impl>(*this)} {
 }
 
 device::device(device&&) noexcept = default;
@@ -78,7 +76,7 @@ void device::wait() {
 }
 
 void device::process() {
-  _impl->process(*(this));
+  _impl->process();
 }
 
 LIBSTDAUDIO_NAMESPACE_END

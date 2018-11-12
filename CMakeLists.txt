@@ -23,11 +23,11 @@ add_library(libstdaudio
 add_executable(white_noise examples/white_noise.cpp)
 target_link_libraries(white_noise libstdaudio)
 
-add_executable(level_meter examples/level_meter.cpp)
+add_executable(level_meter examples/level_meter.cpp include/buffer.h)
 target_link_libraries(level_meter libstdaudio)
 
 add_executable(print_devices examples/print_devices.cpp)
 target_link_libraries(print_devices libstdaudio)
 
-add_executable(test test/test_main.cpp test/device_test.cpp test/buffer_list_test.cpp)
+add_executable(test test/test_main.cpp test/device_test.cpp test/buffer_list_test.cpp test/buffer_test.cpp)
 target_link_libraries(test libstdaudio)

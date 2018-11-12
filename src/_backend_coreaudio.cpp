@@ -56,8 +56,12 @@ namespace {
 
   class _coreaudio_device_impl : public _device_impl {
   public:
-    explicit _coreaudio_device_impl(AudioObjectID device_id, string name, _coreaudio_stream_config config)
-      : _device_id(device_id), _name(move(name)), _config(config) {
+    _coreaudio_device_impl(device& owner,
+                           AudioObjectID device_id,
+                           string name,
+                           _coreaudio_stream_config config)
+      : _device_impl(owner),
+        _device_id(device_id), _name(move(name)), _config(config) {
     }
 
     ~_coreaudio_device_impl() {
@@ -86,7 +90,7 @@ private:
       // no-op
     }
 
-    void process(device& owner) override {
+    void process() override {
       // no-op
     }
 
@@ -98,7 +102,7 @@ private:
       if (!_running) {
         // TODO: ProcID is a resource; wrap it into an RAII guard
         if (!_coreaudio_util::check_error(AudioDeviceCreateIOProcID(
-          _device_id, _device_callback, nullptr, &_proc_id)))
+          _device_id, _device_callback, this, &_proc_id)))
           return;
 
         if (!_coreaudio_util::check_error(AudioDeviceStart(
@@ -127,14 +131,27 @@ private:
       }
     }
 
-    static OSStatus _device_callback(AudioObjectID           inDevice,
-                                     const AudioTimeStamp*   inNow,
-                                     const AudioBufferList*  inInputData,
-                                     const AudioTimeStamp*   inInputTime,
-                                     AudioBufferList*        outOutputData,
-                                     const AudioTimeStamp*   inOutputTime,
-                                     void* __nullable        inClientData) {
-      // TODO: convert AudioBufferList into device::buffer_list and pass to _user_callback
+    static OSStatus _device_callback(AudioObjectID device_id,
+                                     const AudioTimeStamp*,
+                                     const AudioBufferList* input_data,
+                                     const AudioTimeStamp*,
+                                     AudioBufferList* output_data,
+                                     const AudioTimeStamp*,
+                                     void* void_ptr_to_this_device) {
+      if (void_ptr_to_this_device == nullptr)
+        return noErr;  // TODO: return some kind of error to CoreAudio? which?
+
+      _coreaudio_device_impl& this_device = *reinterpret_cast<_coreaudio_device_impl*>(void_ptr_to_this_device);
+
+      buffer_list bl = {
+        vector<buffer>(input_data->mNumberBuffers),
+        vector<buffer>(output_data->mNumberBuffers)
+      };
+      // TODO: make audio::buffers that actually refer to the data received here
+      // TODO: audio::buffer_list must be created real-time safe without heap allocations
+
+      invoke(this_device._user_callback, this_device._owner, bl);
+      return noErr;
     }
 
     AudioObjectID _device_id = {};
@@ -307,16 +324,6 @@ device_list& get_output_device_list() {
   auto& enumerator = _coreaudio_device_enumerator::get_instance();
   static device_list out_devices{enumerator.get_output_device_list_impl()};
   return out_devices;
-}
-
-int buffer_list::num_input_buffers() const noexcept {
-  // TODO: implement
-  return 0;
-}
-
-int buffer_list::num_output_buffers() const noexcept {
-  // TODO: implement
-  return 0;
 }
 
 LIBSTDAUDIO_NAMESPACE_END
