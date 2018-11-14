@@ -343,12 +343,12 @@ private:
   };
 }
 
-device get_input_device() {
+device get_default_input_device() {
   return _coreaudio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultInputDevice);
 }
 
-device get_output_device() {
+device get_default_output_device() {
   return _coreaudio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultOutputDevice);
 }

@@ -10,7 +10,7 @@ int main() {
   using namespace std::experimental;
   std::atomic<float> max_volume = 0;
 
-  auto d = audio::get_input_device();
+  auto d = audio::get_default_input_device();
   d.connect([&](audio::device&, audio::buffer_list& bl){
     float new_max_volume = 0;
 

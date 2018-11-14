@@ -11,7 +11,7 @@ int main() {
   std::mt19937 gen(rd());
   std::uniform_real_distribution<float> white_noise(-1.0f, 1.0f);
 
-  auto d = audio::get_output_device();
+  auto d = audio::get_default_output_device();
   d.connect([&](audio::device&, audio::buffer_list& bl){
     for (auto& buffer : bl.output_buffers())
       for (auto& sample : buffer.raw())
