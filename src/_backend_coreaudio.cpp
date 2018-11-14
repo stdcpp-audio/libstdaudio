@@ -54,6 +54,52 @@ namespace {
     AudioBufferList output_config = {0};
   };
 
+  buffer _coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {
+    using value_type = float;
+    // TODO: allow different types here! It will possibly be int16_t instead of float on iOS!
+
+    const size_t num_channels = ca_buffer.mNumberChannels;
+    value_type* data_ptr = reinterpret_cast<value_type*>(ca_buffer.mData);
+    const size_t data_size = ca_buffer.mDataByteSize / sizeof(value_type);
+
+    auto data = span<value_type>(data_ptr, static_cast<span<value_type>::index_type>(data_size));
+    // TODO: the static_cast is necessary because span's index_type is currently signed!
+
+    return {data, num_channels, buffer_ordering::interleaved};
+  }
+
+  bool _coreaudio_fill_buffer_list(const AudioBufferList *ca_input_bl,
+                                   const AudioBufferList *ca_output_bl,
+                                   buffer_list &bl) {
+    assert(ca_input_bl != nullptr);
+    assert(ca_output_bl != nullptr);
+
+    const size_t num_input_buffers = ca_input_bl->mNumberBuffers;
+    const size_t num_output_buffers = ca_output_bl->mNumberBuffers;
+
+    if (bl.input_buffer_capacity() < num_input_buffers ||
+        bl.output_buffer_capacity() < num_output_buffers) {
+      // FAIL! we would have to allocate memory in order to process this data.
+      // TODO: introduce some debug-mode-only assert macro for this kind of runtime error!
+      // TODO: how do we tell the user about such errors? we can't throw exceptions in the audio thread
+      return false;
+    }
+
+    bl.resize(num_input_buffers, num_output_buffers);
+
+    for (size_t i_buf = 0; i_buf < num_input_buffers; ++i_buf) {
+      const AudioBuffer& ca_buffer = ca_input_bl->mBuffers[i_buf];
+      bl.input_buffers()[i_buf] = _coreaudio_buffer_to_buffer(ca_buffer);
+    }
+
+    for (size_t i_buf = 0; i_buf < num_output_buffers; ++i_buf) {
+      const AudioBuffer& ca_buffer = ca_output_bl->mBuffers[i_buf];
+      bl.output_buffers()[i_buf] = _coreaudio_buffer_to_buffer(ca_buffer);
+    }
+
+    return true;
+  }
+
   class _coreaudio_device_impl : public _device_impl {
   public:
     _coreaudio_device_impl(device& owner,
@@ -138,19 +184,13 @@ private:
                                      AudioBufferList* output_data,
                                      const AudioTimeStamp*,
                                      void* void_ptr_to_this_device) {
-      if (void_ptr_to_this_device == nullptr)
-        return noErr;  // TODO: return some kind of error to CoreAudio? which?
-
+      assert (void_ptr_to_this_device != nullptr);
       _coreaudio_device_impl& this_device = *reinterpret_cast<_coreaudio_device_impl*>(void_ptr_to_this_device);
 
-      buffer_list bl = {
-        vector<buffer>(input_data->mNumberBuffers),
-        vector<buffer>(output_data->mNumberBuffers)
-      };
-      // TODO: make audio::buffers that actually refer to the data received here
-      // TODO: audio::buffer_list must be created real-time safe without heap allocations
+      if (!_coreaudio_fill_buffer_list(input_data, output_data, this_device._current_buffer_list))
+        return noErr;  // TODO: Return some kind of error to CoreAudio? which?
 
-      invoke(this_device._user_callback, this_device._owner, bl);
+      invoke(this_device._user_callback, this_device._owner, this_device._current_buffer_list);
       return noErr;
     }
 
@@ -160,6 +200,7 @@ private:
     string _name;
     _coreaudio_stream_config _config;
     device::callback _user_callback;
+    buffer_list _current_buffer_list;
   };
 
   class _coreaudio_device_enumerator {
