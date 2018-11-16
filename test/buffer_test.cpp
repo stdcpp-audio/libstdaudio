@@ -21,12 +21,25 @@ TEST_CASE( "Buffer default constructor", "[buffer]") {
 
 TEST_CASE( "Buffer raw data access", "[buffer]") {
   float data[] = {0, 1, 0, -1};
-  auto buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
 
+  auto buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
   REQUIRE(buf.raw().data() == data);
   REQUIRE(buf.raw().size() == sizeof(data) / sizeof(data[0]));
   REQUIRE(buf.get_ordering() == audio::buffer_ordering::interleaved);
 
   buf = audio::buffer(data, 1, audio::buffer_ordering::deinterleaved);
   REQUIRE(buf.get_ordering() == audio::buffer_ordering::deinterleaved);
+}
+
+TEST_CASE( "Buffer channels size", "[buffer]") {
+  float data[] = {0, 1, 0, -1};
+
+  auto buf = audio::buffer();
+  REQUIRE(buf.channels().size() == 0);
+
+  buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
+  REQUIRE(buf.channels().size() == 1);
+
+  buf = audio::buffer(data, 2, audio::buffer_ordering::interleaved);
+  REQUIRE(buf.channels().size() == 2);
 }
