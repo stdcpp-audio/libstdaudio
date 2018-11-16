@@ -13,6 +13,16 @@ buffer::size_type buffer::channel_view::size() const noexcept {
   return _num_channels;
 }
 
+channel* buffer::channel_view::begin() const noexcept {
+  // TODO: implement
+  return nullptr;
+}
+
+channel* buffer::channel_view::end() const noexcept {
+  // TODO: implement
+  return nullptr;
+}
+
 buffer::buffer(span<value_type> data, size_type num_channels, buffer_ordering ordering)
   : _data(data), _ordering(ordering),
     _channel_view(*this, num_channels) {

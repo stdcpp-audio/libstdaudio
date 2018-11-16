@@ -6,6 +6,8 @@
 
 using namespace std::experimental;
 
+float data[] = {0, 1, 0, -1};
+
 TEST_CASE( "Buffer default constructor", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.raw().data() == nullptr);
@@ -20,8 +22,6 @@ TEST_CASE( "Buffer default constructor", "[buffer]") {
 // TODO: Test for what should happen if the number of channels and total size don't add up to an integer frame count
 
 TEST_CASE( "Buffer raw data access", "[buffer]") {
-  float data[] = {0, 1, 0, -1};
-
   auto buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
   REQUIRE(buf.raw().data() == data);
   REQUIRE(buf.raw().size() == sizeof(data) / sizeof(data[0]));
@@ -32,8 +32,6 @@ TEST_CASE( "Buffer raw data access", "[buffer]") {
 }
 
 TEST_CASE( "Buffer channels size", "[buffer]") {
-  float data[] = {0, 1, 0, -1};
-
   auto buf = audio::buffer();
   REQUIRE(buf.channels().size() == 0);
 
@@ -42,4 +40,18 @@ TEST_CASE( "Buffer channels size", "[buffer]") {
 
   buf = audio::buffer(data, 2, audio::buffer_ordering::interleaved);
   REQUIRE(buf.channels().size() == 2);
+}
+
+TEST_CASE( "Buffer channels loop", "[buffer]") {
+  auto buf = audio::buffer();
+  for (auto& ch : buf.channels())
+    FAIL();
+}
+
+TEST_CASE( "Buffer channels begin and end", "[buffer]") {
+  auto buf = audio::buffer();
+
+  auto ch_begin = buf.channels().begin();
+  auto ch_end = buf.channels().end();
+  REQUIRE(ch_begin == ch_end);
 }

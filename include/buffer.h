@@ -7,7 +7,26 @@
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
-class buffer;
+/** An audio sample, representing the amplitude of an audio signal at some
+ *  discrete point in time.
+ */
+using value_type = float;
+// TODO: This cannot stay a typedef at compile time. We might need to use different
+// ones in the same program, as some audio APIs might support multiple formats.
+
+
+/** A channel, i.e. an audio signal that is digitally sampled using linear
+ *  pulse-code modulation and represented as a contiguous sequence of audio samples.
+ */
+using channel = span<value_type>;
+
+
+/** A frame, i.e. a contiguous sequence of audio samples, one per channel,
+ *  that together represent the amplitudes of a set of audio channels at
+ *  some discrete point in time.
+ */
+using frame = span<value_type>;
+
 
 /** Represents different methods to order the samples inside a multi-channel
  *  audio buffer.
@@ -55,6 +74,12 @@ public:
 
     /** Returns the number of channels in the buffer. */
     size_type size() const noexcept;
+
+    /** Returns an iterator to the first channel in the buffer. */
+    channel* begin() const noexcept;
+
+    /** Returns an iterator past the last channel in the buffer. */
+    channel* end() const noexcept;
 
   private:
     const buffer* _bptr;
