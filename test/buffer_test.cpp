@@ -6,11 +6,8 @@
 
 using namespace std::experimental;
 
-
-float data[] = {0, 1, 0, -1};
-float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
-
 TEST_CASE( "Buffer default constructor", "[buffer]") {
+  float data[] = {0, 1, 0, -1};
   auto buf = audio::buffer();
   REQUIRE(buf.raw().data() == nullptr);
   REQUIRE(buf.raw().size() == 0);
@@ -25,6 +22,7 @@ TEST_CASE( "Buffer empty()", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.empty());
 
+  float data[] = {0, 1, 0, -1};
   buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
   REQUIRE(!buf.empty());
 }
@@ -33,6 +31,7 @@ TEST_CASE( "Buffer size_bytes()", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.size_bytes() == 0);
 
+  float data[] = {0, 1, 0, -1};
   buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
   REQUIRE(buf.size_bytes() == 16);
 
@@ -44,7 +43,9 @@ TEST_CASE( "Buffer raw data access", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.raw().empty());
 
+  float data[] = {0, 1, 0, -1};
   buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
+
   REQUIRE(!buf.raw().empty());
   REQUIRE(buf.raw().data() == data);
   REQUIRE(buf.raw().size() == sizeof(data) / sizeof(data[0]));
@@ -62,6 +63,7 @@ TEST_CASE( "Buffer channels size", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.channels().size() == 0);
 
+  float data[] = {0, 1, 0, -1};
   buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
   REQUIRE(buf.channels().size() == 1);
 
@@ -82,13 +84,16 @@ TEST_CASE( "Buffer channels begin and end", "[buffer]") {
   auto e = buf.channels().end();
   REQUIRE(b == e);
 
+  float data[] = {0, 1, 0, -1};
   buf = audio::buffer(data, 1, audio::buffer_ordering::interleaved);
+  
   b = buf.channels().begin();
   e = buf.channels().end();
   REQUIRE(b != e);
 }
 
 TEST_CASE( "Buffer channels increment/decrement", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
   auto buf = audio::buffer(more_data, 4, audio::buffer_ordering::interleaved);
   auto b = buf.channels().begin();
   auto b_orig = b;
@@ -120,6 +125,7 @@ TEST_CASE( "Buffer channels increment/decrement", "[buffer]") {
 }
 
 TEST_CASE( "Buffer channels relational operators", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
   auto buf = audio::buffer(more_data, 4, audio::buffer_ordering::interleaved);
   auto b = buf.channels().begin();
   auto b_orig = b;
@@ -146,6 +152,7 @@ TEST_CASE( "Buffer channels relational operators", "[buffer]") {
 }
 
 TEST_CASE( "Buffer channels subscript operator", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
   auto buf = audio::buffer(more_data, 4, audio::buffer_ordering::interleaved);
   auto b = buf.channels().begin();
 
@@ -164,6 +171,7 @@ TEST_CASE( "Buffer channels empty()", "[buffer]") {
   auto buf = audio::buffer();
   REQUIRE(buf.channels().empty());
 
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
   buf = audio::buffer(more_data, 4, audio::buffer_ordering::interleaved);
   REQUIRE(!buf.channels().empty());
 }
