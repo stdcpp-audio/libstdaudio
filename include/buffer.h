@@ -4,6 +4,7 @@
 #pragma once
 #include <cstddef>
 #include "config.h"
+#include "../src/_strided_dynamic_extent_span.h"
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -18,14 +19,14 @@ using value_type = float;
 /** A channel, i.e. an audio signal that is digitally sampled using linear
  *  pulse-code modulation and represented as a contiguous sequence of audio samples.
  */
-using channel = span<value_type>;
+using channel = _strided_dynamic_extent_span<value_type>;
 
 
 /** A frame, i.e. a contiguous sequence of audio samples, one per channel,
  *  that together represent the amplitudes of a set of audio channels at
  *  some discrete point in time.
  */
-using frame = span<value_type>;
+using frame = _strided_dynamic_extent_span<value_type>;
 
 
 /** Represents different methods to order the samples inside a multi-channel
@@ -57,34 +58,25 @@ public:
    *  \param data The audio data.
    *  \param num_channels The number of channels.
    *  \param ordering The buffer ordering of the buffer.
+   *
+   *  Expects: data.size() is a multiple of num_channels.
    */
-  buffer(span<value_type>, size_type num_channels, buffer_ordering ordering);
+  buffer(span<value_type> data, size_type num_channels, buffer_ordering ordering);
 
   /** Returns a view of the raw audio data. */
   span<value_type> raw() const noexcept { return _data; }
 
-  /** Returns true if the audio channels are interleaved, false otherwise. */
+  /** Returns true if the buffer holds no audio data, false otherwise. */
+  bool empty() const noexcept { return _data.empty(); }
+
+  /** Returns the size of the buffer audio data in bytes. */
+  size_type size_bytes() const noexcept { return _data.size_bytes(); }
+
+  /** Returns the ordering of the buffer audio data. */
   buffer_ordering get_ordering() const noexcept { return _ordering; }
 
   /** A view over the channels of an audio buffer. */
-  class channel_view {
-  public:
-    /** Constructs a channel view for the specified buffer. */
-    channel_view(const buffer& b, size_type num_channels);
-
-    /** Returns the number of channels in the buffer. */
-    size_type size() const noexcept;
-
-    /** Returns an iterator to the first channel in the buffer. */
-    channel* begin() const noexcept;
-
-    /** Returns an iterator past the last channel in the buffer. */
-    channel* end() const noexcept;
-
-  private:
-    const buffer* _bptr;
-    size_type _num_channels;
-  };
+  using channel_view = _strided_dynamic_extent_span<value_type>;
 
   /** Returns a channel view of this buffer. */
   const channel_view& channels() const noexcept { return _channel_view; }
@@ -92,7 +84,7 @@ public:
 private:
   span<value_type> _data;
   buffer_ordering _ordering = buffer_ordering::interleaved;
-  channel_view _channel_view{*this, 0};
+  channel_view _channel_view;
 };
 
 LIBSTDAUDIO_NAMESPACE_END
