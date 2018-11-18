@@ -8,14 +8,6 @@
 
 LIBSTDAUDIO_NAMESPACE_BEGIN
 
-/** An audio sample, representing the amplitude of an audio signal at some
- *  discrete point in time.
- */
-using value_type = float;
-// TODO: This cannot stay a typedef at compile time. We might need to use different
-// ones in the same program, as some audio APIs might support multiple formats.
-
-
 /** A channel, i.e. an audio signal that is digitally sampled using linear
  *  pulse-code modulation and represented as a contiguous sequence of audio samples.
  */
