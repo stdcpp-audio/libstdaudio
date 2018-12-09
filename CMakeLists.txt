@@ -6,25 +6,27 @@ project(libstdaudio)
 
 set(CMAKE_CXX_STANDARD 17)
 
-if(APPLE)
-  add_definitions(-DLIBSTDAUDIO_BACKEND_COREAUDIO)
-  set(CMAKE_EXE_LINKER_FLAGS "-framework CoreAudio")
-else()
-  add_definitions(-DLIBSTDAUDIO_BACKEND_NONE)
-endif()
+if (APPLE)
+    add_definitions(-DLIBSTDAUDIO_BACKEND_COREAUDIO)
+    set(CMAKE_EXE_LINKER_FLAGS "-framework CoreAudio")
+else ()
+    add_definitions(-DLIBSTDAUDIO_BACKEND_NONE)
+endif ()
 
 include_directories(include)
 
 add_library(libstdaudio
-  include/audio.h include/config.h
-  include/device.h include/buffer_list.h include/device_list.h
-  src/device.cpp src/_backend_null.cpp src/_backend_coreaudio.cpp src/_device_impl.h src/buffer.cpp src/buffer_list.cpp
-  src/_strided_dynamic_extent_span.h)
+        src/device.cpp
+        src/_backend_null.cpp
+        src/_backend_coreaudio.cpp
+        src/_device_impl.h
+        src/buffer.cpp
+        src/buffer_list.cpp)
 
 add_executable(white_noise examples/white_noise.cpp)
 target_link_libraries(white_noise libstdaudio)
 
-add_executable(level_meter examples/level_meter.cpp include/buffer.h)
+add_executable(level_meter examples/level_meter.cpp)
 target_link_libraries(level_meter libstdaudio)
 
 add_executable(print_devices examples/print_devices.cpp)
