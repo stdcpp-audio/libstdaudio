@@ -8,7 +8,7 @@ int main() {
   using namespace std::experimental;
 
   std::random_device rd;
-  std::mt19937 gen(rd());
+  std::minstd_rand gen(rd());
   std::uniform_real_distribution<float> white_noise(-1.0f, 1.0f);
 
   auto d = audio::get_default_output_device();
