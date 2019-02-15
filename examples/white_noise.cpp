@@ -2,7 +2,10 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #include <random>
+#include <thread>
 #include <audio>
+
+// This example app outputs 5 seconds of white noise.
 
 int main() {
   using namespace std::experimental;
@@ -18,5 +21,7 @@ int main() {
         sample = white_noise(gen);
   });
 
-  while(true);
+  d.start();
+  std::this_thread::sleep_for(std::chrono::seconds(5));
+  d.stop();
 }
