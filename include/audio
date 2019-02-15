@@ -2,8 +2,8 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #pragma once
+#include <__audio_config>
 #include <__audio_buffer>
 #include <__audio_buffer_list>
-#include <__audio_config>
 #include <__audio_device>
 #include <__audio_device_list>
