@@ -126,7 +126,7 @@ namespace {
       return _config.output_config.mNumberBuffers != 0;
     }
 
-    buffer_order get_native_ordering() const noexcept override {
+    buffer_order get_native_buffer_order() const noexcept override {
       return buffer_order::interleaved;
     }
 

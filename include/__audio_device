@@ -52,7 +52,7 @@ public:
   bool is_output() const noexcept;
 
   /** Returns: the ordering of the audio buffers used by this device. */
-  buffer_order get_native_ordering() const noexcept;
+  buffer_order get_native_order() const noexcept;
 
   /** Returns:​ The buffer order of the data in the buffers contained in the
    *  ​buffer_list​ passed to the callback, which is accessible via ​buffer::raw().

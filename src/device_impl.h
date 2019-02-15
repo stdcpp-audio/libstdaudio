@@ -16,7 +16,7 @@ public:
   virtual string_view name() const = 0;
   virtual bool is_input() const noexcept = 0;
   virtual bool is_output() const noexcept = 0;
-  virtual buffer_order get_native_ordering() const noexcept = 0;
+  virtual buffer_order get_native_buffer_order() const noexcept = 0;
   virtual double get_sample_rate() const noexcept = 0;
   virtual size_t get_buffer_size() const noexcept = 0;
   virtual void start() = 0;

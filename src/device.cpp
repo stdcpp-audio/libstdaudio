@@ -26,7 +26,7 @@ namespace {
       return false;
     }
 
-    buffer_order get_native_ordering() const noexcept override {
+    buffer_order get_native_buffer_order() const noexcept override {
       // TODO: none of the two currently possible values make sense here!
       return {};
     }
@@ -93,8 +93,8 @@ bool device::is_output() const noexcept {
   return _impl->is_output();
 }
 
-buffer_order device::get_native_ordering() const noexcept {
-  return _impl->get_native_ordering();
+buffer_order device::get_native_order() const noexcept {
+  return _impl->get_native_buffer_order();
 }
 
 double device::get_sample_rate() const noexcept {
