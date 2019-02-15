@@ -20,7 +20,6 @@ TEST_CASE( "Construct non-empty buffer list", "[buffer_list]") {
   REQUIRE(bl.output_buffers().size() == 3);
 }
 
-
 TEST_CASE( "Resize buffer list", "[buffer_list]") {
   auto bl = audio::buffer_list(2, 3);
   bl.resize(4, 5);
