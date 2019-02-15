@@ -1,7 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "audio.h"
+#include <audio>
 #include "catch/catch.hpp"
 
 using namespace std::experimental;

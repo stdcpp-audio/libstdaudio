@@ -2,9 +2,9 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #pragma once
-#include "device.h"
+#include <__audio_device>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 class _device_impl {
 public:
@@ -32,4 +32,4 @@ device _make_device_with_impl(Args&&... args) {
   return new_device;
 }
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

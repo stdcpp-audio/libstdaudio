@@ -3,9 +3,9 @@
 
 #pragma once
 #include <forward_list>
-#include "device.h"
+#include <__audio_device>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 class device_list;
 
@@ -42,4 +42,4 @@ private:
   _underlying_container _dlist;
 };
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

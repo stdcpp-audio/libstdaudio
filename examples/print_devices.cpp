@@ -2,7 +2,7 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #include <iostream>
-#include <audio.h>
+#include <audio>
 
 using namespace std::experimental;
 

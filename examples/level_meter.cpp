@@ -4,7 +4,7 @@
 #include <iostream>
 #include <atomic>
 #include <thread>
-#include <audio.h>
+#include <audio>
 
 int main() {
   using namespace std::experimental;

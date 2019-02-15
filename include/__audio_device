@@ -5,10 +5,10 @@
 #include <memory>
 #include <functional>
 #include <string_view>
-#include "config.h"
-#include "buffer_list.h"
+#include <__audio_config>
+#include <__audio_buffer_list>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 class _device_impl;
 
@@ -71,4 +71,4 @@ device get_default_input_device();
 /** Returns the current default audio output device. */
 device get_default_output_device();
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

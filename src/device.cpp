@@ -1,10 +1,10 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "device.h"
+#include <__audio_device>
 #include "_device_impl.h"
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
   class _null_device_impl : public _device_impl {
@@ -79,5 +79,5 @@ void device::process() {
   _impl->process();
 }
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END
 

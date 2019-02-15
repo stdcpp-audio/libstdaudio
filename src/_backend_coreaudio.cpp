@@ -1,7 +1,7 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "device_list.h"
+#include <__audio_device_list>
 
 #ifdef LIBSTDAUDIO_BACKEND_COREAUDIO
 #include <cctype>
@@ -11,7 +11,7 @@
 #include <AudioToolbox/AudioToolbox.h>
 #include "_device_impl.h"
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
   class _coreaudio_util {
@@ -367,5 +367,5 @@ device_list& get_output_device_list() {
   return out_devices;
 }
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END
 #endif // LIBSTDAUDIO_BACKEND_COREAUDIO

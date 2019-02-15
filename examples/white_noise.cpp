@@ -2,7 +2,7 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #include <random>
-#include <audio.h>
+#include <audio>
 
 int main() {
   using namespace std::experimental;

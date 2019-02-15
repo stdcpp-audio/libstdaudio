@@ -1,10 +1,10 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "buffer.h"
+#include <__audio_buffer>
 #include <vector>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 
 buffer::buffer(span<value_type> data, size_type num_channels, buffer_ordering ordering)
@@ -13,4 +13,4 @@ buffer::buffer(span<value_type> data, size_type num_channels, buffer_ordering or
   assert(data.size() % num_channels == 0);
 }
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

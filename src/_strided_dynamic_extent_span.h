@@ -4,9 +4,9 @@
 #pragma once
 #include <vector>
 #include <iterator>
-#include "config.h"
+#include <__audio_config>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 template <typename T>
 class _strided_dynamic_extent_span {
@@ -162,4 +162,4 @@ private:
   difference_type _stride = 1;
 };
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

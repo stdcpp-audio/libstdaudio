@@ -3,10 +3,10 @@
 
 #pragma once
 #include <cstddef>
-#include "config.h"
+#include <__audio_config>
 #include "../src/_strided_dynamic_extent_span.h"
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 /** A channel, i.e. an audio signal that is digitally sampled using linear
  *  pulse-code modulation and represented as a contiguous sequence of audio samples.
@@ -79,4 +79,4 @@ private:
   channel_view _channel_view;
 };
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END

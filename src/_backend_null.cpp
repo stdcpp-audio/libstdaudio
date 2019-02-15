@@ -1,10 +1,10 @@
 // libstdaudio
 // Copyright (c) 2018 - Timur Doumler
 
-#include "device_list.h"
+#include <__audio_device_list>
 
 #ifdef LIBSTDAUDIO_BACKEND_NONE
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // Dummy implementation for platforms that do not support any audio devices
 
@@ -34,5 +34,5 @@ int buffer_list::num_output_buffers() const noexcept {
   return 0;
 }
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END
 #endif // LIBSTDAUDIO_BACKEND_NONE

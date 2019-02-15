@@ -3,10 +3,10 @@
 
 #pragma once
 #include <vector>
-#include "config.h"
-#include "buffer.h"
+#include <__audio_config>
+#include <__audio_buffer>
 
-LIBSTDAUDIO_NAMESPACE_BEGIN
+_LIBSTDAUDIO_NAMESPACE_BEGIN
 
 /** A container holding a number of audio buffers for input and output, respectively. */
 class buffer_list {
@@ -65,4 +65,4 @@ private:
   void _preallocate_safe_num_buffers();
 };
 
-LIBSTDAUDIO_NAMESPACE_END
+_LIBSTDAUDIO_NAMESPACE_END
