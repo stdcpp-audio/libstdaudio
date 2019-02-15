@@ -7,7 +7,6 @@
 using namespace std::experimental;
 
 TEST_CASE( "Buffer default constructor", "[buffer]") {
-  float data[] = {0, 1, 0, -1};
   auto buf = audio::buffer();
   REQUIRE(buf.raw().data() == nullptr);
   REQUIRE(buf.raw().size() == 0);
