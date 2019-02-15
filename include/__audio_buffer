@@ -11,20 +11,20 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 /** A channel, i.e. an audio signal that is digitally sampled using linear
  *  pulse-code modulation and represented as a contiguous sequence of audio samples.
  */
-using channel = strided_dynamic_extent_span<value_type>;
+using channel = strided_dynamic_extent_span<sample_type>;
 
 
 /** A frame, i.e. a contiguous sequence of audio samples, one per channel,
  *  that together represent the amplitudes of a set of audio channels at
  *  some discrete point in time.
  */
-using frame = strided_dynamic_extent_span<value_type>;
+using frame = strided_dynamic_extent_span<sample_type>;
 
 
 /** Represents different methods to order the samples inside a multi-channel
  *  audio buffer.
  */
-enum class buffer_ordering : char {
+enum class buffer_order : char {
   /** Samples that belong to the same audio frame are contiguous in memory. */
   interleaved,
 
@@ -39,8 +39,6 @@ enum class buffer_ordering : char {
  */
 class buffer {
 public:
-  /** The numeric format used for a single sample. */
-  using value_type = float;   // TODO: make this a template argument?
   using size_type = size_t;
 
   /** Constructs a buffer object holding no audio data. */
@@ -53,10 +51,10 @@ public:
    *
    *  Expects: data.size() is a multiple of num_channels.
    */
-  buffer(span<value_type> data, size_type num_channels, buffer_ordering ordering);
+  buffer(span<sample_type> data, size_type num_channels, buffer_order ordering);
 
   /** Returns a view of the raw audio data. */
-  span<value_type> raw() const noexcept { return _data; }
+  span<sample_type> raw() const noexcept { return _data; }
 
   /** Returns true if the buffer holds no audio data, false otherwise. */
   bool empty() const noexcept { return _data.empty(); }
@@ -65,17 +63,17 @@ public:
   size_type size_bytes() const noexcept { return _data.size_bytes(); }
 
   /** Returns the ordering of the buffer audio data. */
-  buffer_ordering get_ordering() const noexcept { return _ordering; }
+  buffer_order get_ordering() const noexcept { return _ordering; }
 
   /** A view over the channels of an audio buffer. */
-  using channel_view = strided_dynamic_extent_span<value_type>;
+  using channel_view = strided_dynamic_extent_span<sample_type>;
 
   /** Returns a channel view of this buffer. */
   const channel_view& channels() const noexcept { return _channel_view; }
 
 private:
-  span<value_type> _data;
-  buffer_ordering _ordering = buffer_ordering::interleaved;
+  span<sample_type> _data;
+  buffer_order _ordering = buffer_order::interleaved;
   channel_view _channel_view;
 };
 

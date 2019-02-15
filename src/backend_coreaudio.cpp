@@ -55,17 +55,16 @@ namespace {
   };
 
   buffer coreaudio_buffer_to_buffer(const AudioBuffer &ca_buffer) {
-    using value_type = float;
-    // TODO: allow different types here! It will possibly be int16_t instead of float on iOS!
+    // TODO: allow different sample types here! It will possibly be int16_t instead of float on iOS!
 
     const size_t num_channels = ca_buffer.mNumberChannels;
-    value_type* data_ptr = reinterpret_cast<value_type*>(ca_buffer.mData);
-    const size_t data_size = ca_buffer.mDataByteSize / sizeof(value_type);
+    auto* data_ptr = reinterpret_cast<sample_type*>(ca_buffer.mData);
+    const size_t data_size = ca_buffer.mDataByteSize / sizeof(sample_type);
 
-    auto data = span<value_type>(data_ptr, static_cast<span<value_type>::index_type>(data_size));
+    auto data = span<sample_type>(data_ptr, static_cast<span<sample_type>::index_type>(data_size));
     // TODO: the static_cast is necessary because span's index_type is currently signed!
 
-    return {data, num_channels, buffer_ordering::interleaved};
+    return {data, num_channels, buffer_order::interleaved};
   }
 
   bool coreaudio_fill_buffer_list(const AudioBufferList *ca_input_bl,
@@ -100,7 +99,7 @@ namespace {
     return true;
   }
 
-  class coreaudio_device_impl : public device_impl {
+  class coreaudio_device_impl final : public device_impl {
   public:
     coreaudio_device_impl(device& owner,
                            AudioObjectID device_id,
@@ -110,11 +109,15 @@ namespace {
         _device_id(device_id), _name(move(name)), _config(config) {
     }
 
-    ~coreaudio_device_impl() {
+    ~coreaudio_device_impl() override {
         stop();
     }
 
-private:
+  private:
+    string_view name() const override {
+      return _name;
+    }
+
     bool is_input() const noexcept override {
       return _config.input_config.mNumberBuffers != 0;
     }
@@ -123,28 +126,59 @@ private:
       return _config.output_config.mNumberBuffers != 0;
     }
 
-    void connect(device::callback cb) override {
-      _user_callback = move(cb);
-        start();
+    buffer_order get_native_ordering() const noexcept override {
+      return buffer_order::interleaved;
     }
 
-    bool is_polling() const noexcept override {
-      return false;
+    double get_sample_rate() const noexcept override {
+      AudioObjectPropertyAddress pa = {
+        kAudioDevicePropertyNominalSampleRate,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster
+      };
+
+      uint32_t data_size = 0;
+      if (!coreaudio_util::check_error(AudioObjectGetPropertyDataSize(
+        _device_id, &pa, 0, nullptr, &data_size)))
+        return {};
+
+      if (data_size != sizeof(double))
+        return {};
+
+      double sample_rate = 0;
+
+      if (!coreaudio_util::check_error(AudioObjectGetPropertyData(
+        _device_id, &pa, 0, nullptr, &data_size, &sample_rate)))
+        return {};
+
+      return sample_rate;
     }
 
-    void wait() override {
-      // no-op
+    size_t get_buffer_size() const noexcept override {
+      AudioObjectPropertyAddress pa = {
+        kAudioDevicePropertyBufferSize,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster
+      };
+
+      uint32_t data_size = 0;
+      if (!coreaudio_util::check_error(AudioObjectGetPropertyDataSize(
+        _device_id, &pa, 0, nullptr, &data_size)))
+        return {};
+
+      if (data_size != sizeof(uint32_t))
+        return {};
+
+      uint32_t buffer_size = 0;
+
+      if (!coreaudio_util::check_error(AudioObjectGetPropertyData(
+        _device_id, &pa, 0, nullptr, &data_size, &buffer_size)))
+        return {};
+
+      return buffer_size;
     }
 
-    void process() override {
-      // no-op
-    }
-
-    string_view name() const override {
-      return _name;
-    }
-
-    void start() {
+    void start() override {
       if (!_running) {
         // TODO: ProcID is a resource; wrap it into an RAII guard
         if (!coreaudio_util::check_error(AudioDeviceCreateIOProcID(
@@ -164,7 +198,7 @@ private:
       }
     }
 
-    void stop() {
+    void stop() override {
       if (_running) {
         coreaudio_util::check_error(AudioDeviceStop(
             _device_id, device_callback));
@@ -175,6 +209,33 @@ private:
         _proc_id = {};
         _running = false;
       }
+    }
+
+    bool is_running() const noexcept override {
+      return _running;
+    }
+
+    bool supports_callback() const noexcept override {
+      return true;
+    }
+
+    bool supports_process() const noexcept override {
+      return false;
+    }
+
+    void connect(device::callback cb) override {
+      if (_running)
+        throw device_exception{};
+
+      _user_callback = move(cb);
+    }
+
+    void wait() const override {
+      throw device_exception{};
+    }
+
+    void process(device::callback& c) override {
+      throw device_exception{};
     }
 
     static OSStatus device_callback(AudioObjectID device_id,

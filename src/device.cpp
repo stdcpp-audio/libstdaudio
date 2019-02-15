@@ -7,9 +7,9 @@
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
-  class null_device_impl : public device_impl {
+  class null_device_impl final : public device_impl {
   public:
-    null_device_impl(device& owner)
+    explicit null_device_impl(device& owner)
       : device_impl(owner) {
     }
 
@@ -26,19 +26,49 @@ namespace {
       return false;
     }
 
+    buffer_order get_native_ordering() const noexcept override {
+      // TODO: none of the two currently possible values make sense here!
+      return {};
+    }
+
+    double get_sample_rate() const noexcept override {
+      return 0;
+    }
+
+    size_t get_buffer_size() const noexcept override {
+      return 0;
+    }
+
+    void start() override {
+      throw device_exception{};
+    }
+
+    void stop() override {
+      // no-op
+    }
+
+    bool is_running() const noexcept override {
+      return false;
+    }
+
+    bool supports_callback() const noexcept override {
+      return false;
+    }
+
+    bool supports_process() const noexcept override {
+      return false;
+    }
+
     void connect(device::callback) override {
-      // TODO: insert assertion. Connecting a callback to a null device is a no-op
+      throw device_exception{};
     }
 
-    bool is_polling() const noexcept override {
-      // the null device does not have a callback mechanism.
-      return true;
+    void wait() const override {
+      throw device_exception{};
     }
 
-    void wait() override {
-    }
-
-    void process() override {
+    void process(device::callback &c) override {
+      throw device_exception{};
     }
   };
 }
@@ -63,20 +93,48 @@ bool device::is_output() const noexcept {
   return _impl->is_output();
 }
 
+buffer_order device::get_native_ordering() const noexcept {
+  return _impl->get_native_ordering();
+}
+
+double device::get_sample_rate() const noexcept {
+  return _impl->get_sample_rate();
+}
+
+size_t device::get_buffer_size() const noexcept {
+  return _impl->get_buffer_size();
+}
+
+void device::start() {
+  _impl->start();
+}
+
+void device::stop() {
+  _impl->stop();
+}
+
+bool device::is_running() const noexcept {
+  return _impl->is_running();
+}
+
+bool device::supports_callback() const noexcept {
+  return _impl->supports_callback();
+}
+
+bool device::supports_process() const noexcept {
+  return _impl->supports_process();
+}
+
 void device::connect(device::callback cb) {
   _impl->connect(move(cb));
 }
 
-bool device::is_polling() const noexcept {
-  return _impl->is_polling();
-}
-
-void device::wait() {
+void device::wait() const {
   _impl->wait();
 }
 
-void device::process() {
-  _impl->process();
+void device::process(callback& cb) {
+  _impl->process(cb);
 }
 
 _LIBSTDAUDIO_NAMESPACE_END
