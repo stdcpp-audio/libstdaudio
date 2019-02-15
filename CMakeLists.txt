@@ -17,9 +17,9 @@ include_directories(include)
 
 add_library(libstdaudio
         src/device.cpp
-        src/_backend_null.cpp
-        src/_backend_coreaudio.cpp
-        src/_device_impl.h
+        src/backend_null.cpp
+        src/backend_coreaudio.cpp
+        src/device_impl.h
         src/buffer.cpp
         src/buffer_list.cpp)
 

@@ -6,13 +6,13 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-class _device_impl {
+class device_impl {
 public:
-  _device_impl(device& owner)
+  device_impl(device& owner)
     : _owner(owner) {
   }
 
-  virtual ~_device_impl() = default;
+  virtual ~device_impl() = default;
   virtual string_view name() const = 0;
   virtual bool is_input() const noexcept = 0;
   virtual bool is_output() const noexcept = 0;

@@ -10,7 +10,7 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-class _device_impl;
+class device_impl;
 
 /** A handle to an audio input and/or output device. */
 class device {
@@ -61,7 +61,7 @@ public:
   void process();
 
 private:
-  unique_ptr<_device_impl> _impl;
+  unique_ptr<device_impl> _impl;
   template <typename Impl, typename... Args>  friend device _make_device_with_impl(Args&&...);
 };
 

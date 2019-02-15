@@ -4,21 +4,21 @@
 #pragma once
 #include <cstddef>
 #include <__audio_config>
-#include "../src/_strided_dynamic_extent_span.h"
+#include "../src/strided_dynamic_extent_span.h"
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 /** A channel, i.e. an audio signal that is digitally sampled using linear
  *  pulse-code modulation and represented as a contiguous sequence of audio samples.
  */
-using channel = _strided_dynamic_extent_span<value_type>;
+using channel = strided_dynamic_extent_span<value_type>;
 
 
 /** A frame, i.e. a contiguous sequence of audio samples, one per channel,
  *  that together represent the amplitudes of a set of audio channels at
  *  some discrete point in time.
  */
-using frame = _strided_dynamic_extent_span<value_type>;
+using frame = strided_dynamic_extent_span<value_type>;
 
 
 /** Represents different methods to order the samples inside a multi-channel
@@ -68,7 +68,7 @@ public:
   buffer_ordering get_ordering() const noexcept { return _ordering; }
 
   /** A view over the channels of an audio buffer. */
-  using channel_view = _strided_dynamic_extent_span<value_type>;
+  using channel_view = strided_dynamic_extent_span<value_type>;
 
   /** Returns a channel view of this buffer. */
   const channel_view& channels() const noexcept { return _channel_view; }

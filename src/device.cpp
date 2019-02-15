@@ -2,15 +2,15 @@
 // Copyright (c) 2018 - Timur Doumler
 
 #include <__audio_device>
-#include "_device_impl.h"
+#include "device_impl.h"
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 namespace {
-  class _null_device_impl : public _device_impl {
+  class null_device_impl : public device_impl {
   public:
-    _null_device_impl(device& owner)
-      : _device_impl(owner) {
+    null_device_impl(device& owner)
+      : device_impl(owner) {
     }
 
   private:
@@ -44,7 +44,7 @@ namespace {
 }
 
 device::device()
-  : _impl{make_unique<_null_device_impl>(*this)} {
+  : _impl{make_unique<null_device_impl>(*this)} {
 }
 
 device::device(device&&) noexcept = default;

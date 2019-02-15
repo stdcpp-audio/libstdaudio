@@ -9,7 +9,7 @@
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 template <typename T>
-class _strided_dynamic_extent_span {
+class strided_dynamic_extent_span {
 public:
   using element_type = T;
   using pointer = T*;
@@ -18,9 +18,9 @@ public:
   using index_type = ptrdiff_t;
   using difference_type = ptrdiff_t;
 
-  _strided_dynamic_extent_span() = default;
+  strided_dynamic_extent_span() = default;
 
-  _strided_dynamic_extent_span(pointer data, size_type size, difference_type stride)
+  strided_dynamic_extent_span(pointer data, size_type size, difference_type stride)
     : _data(data), _size(size), _stride(stride) {
     assert(stride > 0);
   }
