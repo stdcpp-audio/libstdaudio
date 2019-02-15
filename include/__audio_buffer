@@ -63,7 +63,7 @@ public:
   size_type size_bytes() const noexcept { return _data.size_bytes(); }
 
   /** Returns the ordering of the buffer audio data. */
-  buffer_order get_ordering() const noexcept { return _ordering; }
+  buffer_order get_order() const noexcept { return _order; }
 
   /** A view over the channels of an audio buffer. */
   using channel_view = strided_span<sample_type>;
@@ -73,7 +73,7 @@ public:
 
 private:
   span<sample_type> _data;
-  buffer_order _ordering = buffer_order::interleaved;
+  buffer_order _order = buffer_order::interleaved;
   channel_view _channel_view;
 };
 
