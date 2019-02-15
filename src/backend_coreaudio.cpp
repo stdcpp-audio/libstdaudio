@@ -76,8 +76,8 @@ namespace {
     const size_t num_input_buffers = ca_input_bl->mNumberBuffers;
     const size_t num_output_buffers = ca_output_bl->mNumberBuffers;
 
-    if (bl.input_buffer_capacity() < num_input_buffers ||
-        bl.output_buffer_capacity() < num_output_buffers) {
+    if (bl.__input_buffer_capacity() < num_input_buffers ||
+      bl.__output_buffer_capacity() < num_output_buffers) {
       // FAIL! we would have to allocate memory in order to process this data.
       // TODO: introduce some debug-mode-only assert macro for this kind of runtime error!
       // TODO: how do we tell the user about such errors? we can't throw exceptions in the audio thread

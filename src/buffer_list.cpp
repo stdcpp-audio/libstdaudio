@@ -33,11 +33,11 @@ void buffer_list::_preallocate_safe_num_buffers() {
   _output_buffers.reserve(_safe_num_buffers);
 }
 
-size_t buffer_list::input_buffer_capacity() const noexcept {
+size_t buffer_list::__input_buffer_capacity() const noexcept {
   return _input_buffers.capacity();
 }
 
-size_t buffer_list::output_buffer_capacity() const noexcept {
+size_t buffer_list::__output_buffer_capacity() const noexcept {
   return _output_buffers.capacity();
 }
 
