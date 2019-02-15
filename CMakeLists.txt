@@ -32,5 +32,11 @@ target_link_libraries(level_meter libstdaudio)
 add_executable(print_devices examples/print_devices.cpp)
 target_link_libraries(print_devices libstdaudio)
 
-add_executable(test test/test_main.cpp test/device_test.cpp test/buffer_list_test.cpp test/buffer_test.cpp)
+add_executable(test
+        test/test_main.cpp
+        test/buffer_test.cpp
+        test/buffer_list_test.cpp
+        test/device_test.cpp
+        test/strided_span_test.cpp)
+
 target_link_libraries(test libstdaudio)
