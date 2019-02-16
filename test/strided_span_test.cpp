@@ -70,3 +70,33 @@ TEST_CASE( "at", "[strided_span]") {
   REQUIRE(sspan.at(2) == sspan[2]);
   REQUIRE_THROWS_AS(sspan.at(3), std::out_of_range);
 }
+
+TEST_CASE( "Unequal size", "[strided_span]" ) {
+  std::array<int, 8> a{1, 2, 3, 4, 5, 6, 7, 8};
+  strided_span sspan1(a.data(), a.size(), 2);
+  strided_span sspan2(a.data(), a.size() - 2, 2);
+
+  REQUIRE_FALSE(sspan1 == sspan2);
+  REQUIRE(sspan1 != sspan2);
+}
+
+TEST_CASE( "Unequal stride", "[strided_span]" ) {
+  std::array<int, 8> a{1, 2, 3, 4, 5, 6, 7, 8};
+  strided_span sspan1(a.data(), a.size(), 2);
+  strided_span sspan2(a.data(), a.size(), 4);
+
+  REQUIRE_FALSE(sspan1 == sspan2);
+  REQUIRE(sspan1 != sspan2);
+}
+
+TEST_CASE( "Equal content, unequal data pointer", "[strided_span]" ) {
+  std::array<int, 8> a1{1, 2, 3, 4, 5, 6, 7, 8};
+  std::array<int, 8> a2{1, 2, 3, 4, 5, 6, 7, 8};
+  REQUIRE(a1.data() != a2.data());
+
+  strided_span sspan1(a1.data(), a1.size(), 2);
+  strided_span sspan2(a2.data(), a2.size(), 2);
+
+  REQUIRE(sspan1 == sspan2);
+  REQUIRE_FALSE(sspan1 != sspan2);
+}

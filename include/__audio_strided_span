@@ -173,4 +173,21 @@ private:
   difference_type _stride = 0;
 };
 
+template <typename T>
+bool operator==(const strided_span<T>& lhs, const strided_span<T>& rhs) {
+  if (lhs.size() != rhs.size() || lhs.stride() != rhs.stride())
+    return false;
+
+  for (auto i = 0; i < lhs.size(); ++i)
+    if (lhs[i] != rhs[i])
+      return false;
+
+  return true;
+}
+
+template <typename T>
+bool operator!=(const strided_span<T>& lhs, const strided_span<T>& rhs) {
+  return !(lhs == rhs);
+}
+
 _LIBSTDAUDIO_NAMESPACE_END
