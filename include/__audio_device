@@ -60,8 +60,9 @@ public:
   double get_sample_rate() const noexcept;
   // TODO: provide a setter and a way to query supported sample rates.
 
-  /** Returns: the size of the buffer in bytes that the device will provide
-   *  to the callback.
+  /** Returns: The buffer size in bytes that the device is currently using.
+   *  Note: There is no guarantee that the device will actually use this buffer
+   *  size for the next callback.
    */
   size_t get_buffer_size_bytes() const noexcept;
   // TODO: provide a setter and a way to query supported buffer sizes.
