@@ -35,7 +35,7 @@ namespace {
       return 0;
     }
 
-    size_t get_buffer_size() const noexcept override {
+    size_t get_buffer_size_bytes() const noexcept override {
       return 0;
     }
 
@@ -101,8 +101,8 @@ double device::get_sample_rate() const noexcept {
   return _impl->get_sample_rate();
 }
 
-size_t device::get_buffer_size() const noexcept {
-  return _impl->get_buffer_size();
+size_t device::get_buffer_size_bytes() const noexcept {
+  return _impl->get_buffer_size_bytes();
 }
 
 void device::start() {

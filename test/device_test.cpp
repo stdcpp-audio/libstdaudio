@@ -20,7 +20,7 @@ TEST_CASE( "Null device has no input/output", "[device]") {
 TEST_CASE( "Null device has no sample rate or buffer size", "[device]") {
   audio::device d;
   REQUIRE(d.get_sample_rate() == 0);
-  REQUIRE(d.get_buffer_size() == 0);
+  REQUIRE(d.get_buffer_size_bytes() == 0);
 }
 
 TEST_CASE( "Null device does no audio processing", "[device]") {

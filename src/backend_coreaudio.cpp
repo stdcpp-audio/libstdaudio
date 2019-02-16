@@ -155,7 +155,7 @@ namespace {
       return sample_rate;
     }
 
-    size_t get_buffer_size() const noexcept override {
+    size_t get_buffer_size_bytes() const noexcept override {
       AudioObjectPropertyAddress pa = {
         kAudioDevicePropertyBufferSize,
         kAudioObjectPropertyScopeGlobal,

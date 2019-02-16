@@ -63,8 +63,7 @@ public:
   /** Returns: the size of the buffer in bytes that the device will provide
    *  to the callback.
    */
-  size_t get_buffer_size() const noexcept;
-  // TODO: shouldn't that be in *frames* instead?
+  size_t get_buffer_size_bytes() const noexcept;
   // TODO: provide a setter and a way to query supported buffer sizes.
 
   /** Initializes the underlying audio device to begin requesting (output devices)
