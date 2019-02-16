@@ -40,7 +40,7 @@ enum class buffer_order : char {
  */
 class buffer {
 public:
-  using size_type = size_t;
+  using index_type = ptrdiff_t;
 
   /** Constructs a buffer object holding no audio data. */
   buffer() = default;
@@ -52,7 +52,7 @@ public:
    *
    *  Expects: data.size() is a multiple of num_channels.
    */
-  buffer(span<sample_type> data, size_type num_channels, buffer_order ordering);
+  buffer(span<sample_type> data, size_t num_channels, buffer_order ordering);
 
   /** Returns a view of the raw audio data. */
   span<sample_type> raw() const noexcept { return _data; }
@@ -61,7 +61,7 @@ public:
   bool empty() const noexcept { return _data.empty(); }
 
   /** Returns the size of the buffer audio data in bytes. */
-  size_type size_bytes() const noexcept { return _data.size_bytes(); }
+  index_type size_bytes() const noexcept { return _data.size_bytes(); }
 
   /** Returns the ordering of the buffer audio data. */
   buffer_order get_order() const noexcept { return _order; }

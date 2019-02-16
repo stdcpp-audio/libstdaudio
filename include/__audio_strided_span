@@ -14,13 +14,12 @@ public:
   using element_type = T;
   using pointer = T*;
   using reference = T&;
-  using size_type = size_t;
   using index_type = ptrdiff_t;
   using difference_type = ptrdiff_t;
 
   strided_span() = default;
 
-  strided_span(pointer data, size_type size, difference_type stride)
+  strided_span(pointer data, index_type size, difference_type stride)
     : _data(data), _size(size), _stride(stride) {
     assert(stride > 0);
   }
@@ -29,7 +28,7 @@ public:
     return _data;
   }
 
-  size_type size() const noexcept {
+  index_type size() const noexcept {
     return _size / _stride;
   }
 
@@ -158,7 +157,7 @@ public:
 
 private:
   pointer _data = nullptr;
-  size_type _size = 0;
+  index_type _size = 0;
   difference_type _stride = 1;
 };
 

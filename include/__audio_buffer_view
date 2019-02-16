@@ -21,15 +21,13 @@ class buffer_view
 {
 public:
   using value_type = strided_span<sample_type>;
-  using size_type  =  size_t;
   using index_type = ptrdiff_t;
-  using difference_type = ptrdiff_t;
 
   buffer_view(const buffer& buf) noexcept
     : _buf(buf){
   }
 
-  size_type size() const noexcept {
+  index_type size() const noexcept {
     return _Type == buffer_view_type::channels
       ? _buf._num_channels
       : _buf._num_channels == 0 ? 0 : _buf._data.size() / _buf._num_channels;
@@ -40,8 +38,18 @@ public:
   }
 
   value_type operator[](index_type index) {
-    // TODO: implement
-    return {};
+    if constexpr (_Type == buffer_view_type::channels) {
+      const auto offset = index;
+      const auto stride = static_cast<value_type::index_type>(_buf._num_channels);
+      const auto size = _buf._data.size();
+      return {_buf._data.data() + offset, size, stride};
+    }
+    else {
+      const auto offset = index * static_cast<value_type::index_type>(_buf._num_channels);
+      const auto stride = value_type::index_type{1};
+      const auto size = static_cast<value_type::index_type>(_buf._num_channels);
+      return {_buf._data.data() + offset, size, stride};
+    }
   }
 
   value_type at() {
