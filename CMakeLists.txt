@@ -17,11 +17,11 @@ include_directories(include)
 
 add_library(libstdaudio
         src/device.cpp
-        src/backend_null.cpp
-        src/backend_coreaudio.cpp
         src/device_impl.h
         src/buffer.cpp
-        src/buffer_list.cpp)
+        src/buffer_list.cpp
+        src/backend/coreaudio_backend.cpp
+        src/backend/null_backend.cpp)
 
 add_executable(white_noise examples/white_noise.cpp)
 target_link_libraries(white_noise libstdaudio)

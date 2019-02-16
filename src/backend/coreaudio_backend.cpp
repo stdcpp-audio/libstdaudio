@@ -9,7 +9,7 @@
 #include <iostream>
 #include <vector>
 #include <AudioToolbox/AudioToolbox.h>
-#include "device_impl.h"
+#include "../device_impl.h"
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
