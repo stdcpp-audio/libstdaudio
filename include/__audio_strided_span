@@ -165,7 +165,7 @@ public:
 private:
   pointer _data = nullptr;
   index_type _size = 0;
-  difference_type _stride = 1;
+  difference_type _stride = 0;
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
