@@ -14,7 +14,15 @@ TEST_CASE( "Empty span", "[strided_span]") {
   REQUIRE(ss.empty());
 }
 
-TEST_CASE( "Span without stride", "[strided_span]") {
+TEST_CASE( "Empty span with zero stride", "[strided_span]") {
+  strided_span<int> ss{nullptr, 0, 0};
+
+  REQUIRE(ss.data() == nullptr);
+  REQUIRE(ss.size() == 0);
+  REQUIRE(ss.empty());
+}
+
+TEST_CASE( "Span with unity stride", "[strided_span]") {
   std::array<int, 3> a{11, 21, 31};
   strided_span ss(a.data(), a.size(), 1);
 

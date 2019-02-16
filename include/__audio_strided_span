@@ -21,7 +21,7 @@ public:
 
   strided_span(pointer data, index_type size, difference_type stride)
     : _data(data), _size(size), _stride(stride) {
-    assert(stride > 0);
+    assert(size == 0 || (stride > 0 && size % stride == 0));
   }
 
   pointer data() const noexcept {
@@ -29,7 +29,7 @@ public:
   }
 
   index_type size() const noexcept {
-    return _size / _stride;
+    return _size == 0 ? 0 : _size / _stride;
   }
 
   bool empty() const noexcept {
