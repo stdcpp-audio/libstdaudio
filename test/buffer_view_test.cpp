@@ -6,6 +6,18 @@
 
 using namespace std::experimental::audio;
 
+TEST_CASE( "Channel view type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.channels()), channel_view>);
+  REQUIRE(std::is_same_v<channel_view, buffer_view<buffer_view_type::channels>>);
+}
+
+TEST_CASE( "Frame view type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.frames()), frame_view>);
+  REQUIRE(std::is_same_v<frame_view, buffer_view<buffer_view_type::frames>>);
+}
+
 TEST_CASE( "Empty channel view size", "[buffer_view]") {
   buffer b;
   channel_view channels = b.channels();
@@ -90,6 +102,16 @@ TEST_CASE( "Multi-channel deinterleaved frame view size", "[buffer_view]") {
   auto frames = buf.frames();
   REQUIRE(!frames.empty());
   REQUIRE(frames.size() == 2);
+}
+
+TEST_CASE( "Channel view element type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.channels()[0]), strided_span<float>>);
+}
+
+TEST_CASE( "Frame view element type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.frames()[0]), strided_span<float>>);
 }
 
 TEST_CASE( "Interleaved channel view elements", "[buffer_view]") {
