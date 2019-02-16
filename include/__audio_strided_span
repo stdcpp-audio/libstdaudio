@@ -162,6 +162,11 @@ public:
     return operator[](i);
   }
 
+  // TODO: get rid of this member function. It is currently used by buffer_view::iterator.
+  void __add_offset(index_type offset) {
+    _data += offset;
+  }
+
 private:
   pointer _data = nullptr;
   index_type _size = 0;

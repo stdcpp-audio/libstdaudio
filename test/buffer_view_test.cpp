@@ -182,3 +182,228 @@ TEST_CASE( "Deinterleaved frame view elements", "[buffer_view]") {
   REQUIRE(frames[1][2] == 6);
 }
 
+TEST_CASE( "Empty channel view begin()/end() comparison", "[buffer_view]") {
+  buffer buf;
+  auto channels = buf.channels();
+
+  REQUIRE(channels.begin() == channels.end());
+  REQUIRE_FALSE(channels.begin() != channels.end());
+  REQUIRE_FALSE(channels.begin() < channels.end());
+  REQUIRE(channels.begin() <= channels.end());
+  REQUIRE_FALSE(channels.begin() > channels.end());
+  REQUIRE(channels.begin() >= channels.end());
+
+  REQUIRE(channels.end() == channels.begin());
+  REQUIRE_FALSE(channels.end() != channels.begin());
+  REQUIRE_FALSE(channels.end() < channels.begin());
+  REQUIRE(channels.end() <= channels.begin());
+  REQUIRE_FALSE(channels.end() > channels.begin());
+  REQUIRE(channels.end() >= channels.begin());
+}
+
+TEST_CASE( "Empty frame view begin()/end() comparison", "[buffer_view]") {
+  buffer buf;
+  auto frames = buf.frames();
+
+  REQUIRE(frames.begin() == frames.end());
+  REQUIRE_FALSE(frames.begin() != frames.end());
+  REQUIRE_FALSE(frames.begin() < frames.end());
+  REQUIRE(frames.begin() <= frames.end());
+  REQUIRE_FALSE(frames.begin() > frames.end());
+  REQUIRE(frames.begin() >= frames.end());
+
+  REQUIRE(frames.end() == frames.begin());
+  REQUIRE_FALSE(frames.end() != frames.begin());
+  REQUIRE_FALSE(frames.end() < frames.begin());
+  REQUIRE(frames.end() <= frames.begin());
+  REQUIRE_FALSE(frames.end() > frames.begin());
+  REQUIRE(frames.end() >= frames.begin());
+}
+
+TEST_CASE( "Empty channel view range-based for loop", "[buffer_view]") {
+  buffer buf;
+  for (auto& channel : buf.channels())
+    REQUIRE(false); // should never enter this loop
+}
+
+TEST_CASE( "Empty frame view range-based for loop", "[buffer_view]") {
+  buffer buf;
+  for (auto& frame : buf.frames())
+    REQUIRE(false); // should never enter this loop
+}
+
+TEST_CASE( "Non-empty channel view begin()/end() comparison", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto channels = buf.channels();
+
+  REQUIRE_FALSE(channels.begin() == channels.end());
+  REQUIRE(channels.begin() != channels.end());
+  REQUIRE(channels.begin() < channels.end());
+  REQUIRE(channels.begin() <= channels.end());
+  REQUIRE_FALSE(channels.begin() > channels.end());
+  REQUIRE_FALSE(channels.begin() >= channels.end());
+
+  REQUIRE_FALSE(channels.end() == channels.begin());
+  REQUIRE(channels.end() != channels.begin());
+  REQUIRE_FALSE(channels.end() < channels.begin());
+  REQUIRE_FALSE(channels.end() <= channels.begin());
+  REQUIRE(channels.end() > channels.begin());
+  REQUIRE(channels.end() >= channels.begin());
+}
+
+TEST_CASE( "Non-empty frame view begin()/end() comparison", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto frames = buf.frames();
+
+  REQUIRE_FALSE(frames.begin() == frames.end());
+  REQUIRE(frames.begin() != frames.end());
+  REQUIRE(frames.begin() < frames.end());
+  REQUIRE(frames.begin() <= frames.end());
+  REQUIRE_FALSE(frames.begin() > frames.end());
+  REQUIRE_FALSE(frames.begin() >= frames.end());
+
+  REQUIRE_FALSE(frames.end() == frames.begin());
+  REQUIRE(frames.end() != frames.begin());
+  REQUIRE_FALSE(frames.end() < frames.begin());
+  REQUIRE_FALSE(frames.end() <= frames.begin());
+  REQUIRE(frames.end() > frames.begin());
+  REQUIRE(frames.end() >= frames.begin());
+}
+
+TEST_CASE( "Interleaved channels iterator dereference", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it->size() == 2);
+  REQUIRE((*it)[0] == 1);
+  REQUIRE((*it)[1] == 4);
+}
+
+TEST_CASE( "Denterleaved channels iterator dereference", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it->size() == 2);
+  REQUIRE((*it)[0] == 1);
+  REQUIRE((*it)[1] == 2);
+}
+
+TEST_CASE( "Interleaved frames iterator dereference", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it->size() == 3);
+  REQUIRE((*it)[0] == 1);
+  REQUIRE((*it)[1] == 2);
+  REQUIRE((*it)[2] == 3);
+}
+
+TEST_CASE( "Denterleaved frames iterator dereference", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it->size() == 3);
+  REQUIRE((*it)[0] == 1);
+  REQUIRE((*it)[1] == 3);
+  REQUIRE((*it)[2] == 5);
+}
+
+TEST_CASE( "Interleaved channels iterator prefix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 1, buffer_order::interleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it != channels.end());
+  REQUIRE(++it == channels.end());
+  REQUIRE(it == channels.end());
+}
+
+TEST_CASE( "Deinterleaved channels iterator prefix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 1, buffer_order::deinterleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it != channels.end());
+  REQUIRE(++it == channels.end());
+  REQUIRE(it == channels.end());
+}
+
+TEST_CASE( "Interleaved frames iterator prefix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it != frames.end());
+  REQUIRE(++it == frames.end());
+  REQUIRE(it == frames.end());
+}
+
+TEST_CASE( "Deinterleaved frames iterator prefix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it != frames.end());
+  REQUIRE(++it == frames.end());
+  REQUIRE(it == frames.end());
+}
+
+TEST_CASE( "Interleaved channels iterator postfix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 1, buffer_order::interleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it != channels.end());
+  REQUIRE(it++ != channels.end());
+  REQUIRE(it == channels.end());
+}
+
+TEST_CASE( "Deinterleaved channels iterator postfix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 1, buffer_order::deinterleaved);
+  auto channels = buf.channels();
+  auto it = channels.begin();
+
+  REQUIRE(it != channels.end());
+  REQUIRE(it++ != channels.end());
+  REQUIRE(it == channels.end());
+}
+
+TEST_CASE( "Interleaved frames iterator postfix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it != frames.end());
+  REQUIRE(it++ != frames.end());
+  REQUIRE(it == frames.end());
+}
+
+TEST_CASE( "Deinterleaved frames iterator postfix-increment", "[buffer_view]") {
+  float data[] = {1, 2, 3};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+  auto frames = buf.frames();
+  auto it = frames.begin();
+
+  REQUIRE(it != frames.end());
+  REQUIRE(it++ != frames.end());
+  REQUIRE(it == frames.end());
+}
+
+// TODO: tests for pre/postfix-decrement, operator+=/-=, subscript

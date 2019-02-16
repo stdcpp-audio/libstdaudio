@@ -69,22 +69,131 @@ public:
     return {};
   }
 
-  class iterator
-  {
+  class iterator : public std::iterator<random_access_iterator_tag, value_type, index_type, value_type*, value_type&> {
+  private:
+    using _super = std::iterator<random_access_iterator_tag, value_type>;
 
+  public:
+    // TODO: why is this needed?
+    using typename _super::iterator_category;
+    using typename _super::value_type;
+    using typename _super::difference_type;
+    using typename _super::pointer;
+    using typename _super::reference;
+
+    reference operator*() noexcept {
+      return _sspan;
+    }
+
+    pointer operator->() noexcept {
+      return addressof(_sspan);
+    }
+
+    // TODO: how to implement operator[], considering this is not an iterator into a container?
+
+    iterator& operator++() noexcept {
+      _sspan.__add_offset(_offset_step);
+      return *this;
+    }
+
+    // TODO: why does clang-tidy give a warning here?
+    iterator operator++(int) noexcept {
+      auto retval = *this;
+      ++(*this);
+      return retval;
+    }
+
+    iterator& operator--() noexcept {
+      _sspan.__add_offset(-_offset_step);
+      return *this;
+    }
+
+    // TODO: why does clang-tidy give a warning here?
+    iterator operator--(int) noexcept {
+      auto retval = *this;
+      --(*this);
+      return retval;
+    }
+
+    iterator operator+(difference_type dist) {
+      iterator retval = *this;
+      retval += dist;
+      return retval;
+    }
+
+    iterator operator-(difference_type dist) {
+      iterator retval = *this;
+      retval -= dist;
+      return retval;
+    }
+
+    iterator& operator+=(difference_type dist) {
+      _sspan.__add_offset(dist * _offset_step);
+      return *this;
+    }
+
+    iterator& operator-=(difference_type dist) {
+      _sspan.__add_offset(dist * -_offset_step);
+      return *this;
+    }
+
+    bool operator==(const iterator& other) const noexcept {
+      return _sspan.data() == other._sspan.data()
+        && _sspan.size() == other._sspan.size()
+        && _sspan.stride() == other._sspan.stride();
+    }
+
+    bool operator!=(const iterator& other) const noexcept {
+      return !(*this == other);
+    }
+
+    bool operator<(const iterator& other) const noexcept {
+      return _sspan.data() < other._sspan.data();
+    }
+
+    bool operator<=(const iterator& other) const noexcept {
+      return (*this == other) || (*this < other);
+    }
+
+    bool operator>(const iterator& other) const noexcept {
+      return (*this != other) && !(*this < other);
+    }
+
+    bool operator>=(const iterator& other) const noexcept {
+      return !(*this < other);
+    }
+
+  private:
+    friend class buffer_view;
+    iterator (value_type sspan, index_type offset_step)
+      : _sspan(sspan), _offset_step(offset_step) {}
+
+    strided_span<sample_type> _sspan;
+    index_type _offset_step = 0;
   };
 
   iterator begin() {
-    // TODO: implement
-    return {};
+    return iterator{operator[](0), get_offset_step()};
   }
 
   iterator end() {
-    // TODO: implement
-    return {};
+    index_type offset_step = 3;
+    return iterator{operator[](size()), get_offset_step()};
   }
 
 private:
+  bool interleaved() const noexcept {
+    return _buf.get_order() == buffer_order::interleaved;
+  }
+
+  // TODO: remove code duplication between this function and buffer_view::operator[] above.
+  index_type get_offset_step() const {
+    if constexpr (_Type == buffer_view_type::channels)
+      return interleaved() ? 1 : _buf._data.size() / _buf._num_channels;
+    else
+      return interleaved() ? _buf._num_channels : 1;
+  }
+
   const buffer& _buf;
 };
 
