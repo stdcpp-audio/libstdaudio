@@ -4,24 +4,24 @@
 #include <audio>
 #include "catch/catch.hpp"
 
-using namespace std::experimental;
+using namespace std::experimental::audio;
 
 TEST_CASE( "Construct empty buffer list", "[buffer_list]") {
-  auto bl = audio::buffer_list();
+  auto bl = buffer_list();
 
   REQUIRE(bl.input_buffers().empty());
   REQUIRE(bl.output_buffers().empty());
 }
 
 TEST_CASE( "Construct non-empty buffer list", "[buffer_list]") {
-  auto bl = audio::buffer_list(2, 3);
+  auto bl = buffer_list(2, 3);
 
   REQUIRE(bl.input_buffers().size() == 2);
   REQUIRE(bl.output_buffers().size() == 3);
 }
 
 TEST_CASE( "Resize buffer list", "[buffer_list]") {
-  auto bl = audio::buffer_list(2, 3);
+  auto bl = buffer_list(2, 3);
   bl.resize(4, 5);
 
   REQUIRE(bl.input_buffers().size() == 4);

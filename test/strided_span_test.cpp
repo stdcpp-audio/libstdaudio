@@ -4,10 +4,10 @@
 #include <audio>
 #include "catch/catch.hpp"
 
-using namespace std::experimental;
+using namespace std::experimental::audio;
 
 TEST_CASE( "Empty span", "[strided_span]") {
-  audio::strided_span<int> ss;
+  strided_span<int> ss;
 
   REQUIRE(ss.data() == nullptr);
   REQUIRE(ss.size() == 0);
@@ -16,7 +16,7 @@ TEST_CASE( "Empty span", "[strided_span]") {
 
 TEST_CASE( "Span without stride", "[strided_span]") {
   std::array<int, 3> a{11, 21, 31};
-  audio::strided_span ss(a.data(), a.size(), 1);
+  strided_span ss(a.data(), a.size(), 1);
 
   REQUIRE(ss.data() == a.data());
   REQUIRE(ss.size() == 3);
@@ -35,7 +35,7 @@ TEST_CASE( "Span without stride", "[strided_span]") {
 
 TEST_CASE( "Span with stride", "[strided_span]") {
   std::array<int, 9> a{1, 2, 3, 4, 5, 6, 7, 8, 9};
-  audio::strided_span ss(a.data(), a.size(), 3);
+  strided_span ss(a.data(), a.size(), 3);
 
   REQUIRE(ss.data() == a.data());
   REQUIRE(ss.size() == 3);
