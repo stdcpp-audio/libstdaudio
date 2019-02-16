@@ -39,6 +39,7 @@ add_executable(test
         test/test_main.cpp
         test/buffer_test.cpp
         test/buffer_list_test.cpp
+        test/buffer_view_test.cpp
         test/device_test.cpp
         test/strided_span_test.cpp)
 
