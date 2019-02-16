@@ -18,6 +18,16 @@ TEST_CASE( "Frame view type", "[buffer_view]") {
   REQUIRE(std::is_same_v<frame_view, buffer_view<buffer_view_type::frames>>);
 }
 
+TEST_CASE( "Channel type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.channels()[0]), strided_span<float>>);
+}
+
+TEST_CASE( "Frame type", "[buffer_view]") {
+  buffer buf;
+  REQUIRE(std::is_same_v<decltype(buf.frames()[0]), strided_span<float>>);
+}
+
 TEST_CASE( "Empty channel view size", "[buffer_view]") {
   buffer b;
   channel_view channels = b.channels();
@@ -406,4 +416,77 @@ TEST_CASE( "Deinterleaved frames iterator postfix-increment", "[buffer_view]") {
   REQUIRE(it == frames.end());
 }
 
-// TODO: tests for pre/postfix-decrement, operator+=/-=, subscript
+TEST_CASE( "Buffer channels increment/decrement", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
+  auto buf = buffer(more_data, 4, buffer_order::interleaved);
+  auto b = buf.channels().begin();
+  auto b_orig = b;
+  auto e = buf.channels().end();
+
+  ++b;
+  b++;
+  b+=2;
+
+  REQUIRE(b == e);
+  REQUIRE(b != b_orig);
+
+  --b;
+  b--;
+  b-=2;
+
+  REQUIRE(b != e);
+  REQUIRE(b == b_orig);
+
+  b = b + 4;
+
+  REQUIRE(b == e);
+  REQUIRE(b != b_orig);
+
+  b = b - 4;
+
+  REQUIRE(b != e);
+  REQUIRE(b == b_orig);
+}
+
+TEST_CASE( "Buffer channels relational operators", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
+  auto buf = buffer(more_data, 4, buffer_order::interleaved);
+  auto b = buf.channels().begin();
+  auto b_orig = b;
+
+  REQUIRE(!(b > b_orig));
+  REQUIRE(!(b < b_orig));
+  REQUIRE(!(b_orig > b));
+  REQUIRE(!(b_orig < b));
+  REQUIRE(b <= b_orig);
+  REQUIRE(b >= b_orig);
+  REQUIRE(b_orig <= b);
+  REQUIRE(b_orig >= b);
+
+  ++b;
+
+  REQUIRE(b > b_orig);
+  REQUIRE(!(b < b_orig));
+  REQUIRE(b_orig < b);
+  REQUIRE(!(b_orig > b));
+  REQUIRE(!(b <= b_orig));
+  REQUIRE(b >= b_orig);
+  REQUIRE(b_orig <= b);
+  REQUIRE(!(b_orig >= b));
+}
+
+TEST_CASE( "Buffer channels subscript operator", "[buffer]") {
+  float more_data[] = {0, 1, 0, -1, 0, 2, 0, -2};
+  auto buf = buffer(more_data, 4, buffer_order::interleaved);
+  auto b = buf.channels().begin();
+
+  auto elem0 = buf.channels()[0];
+  auto elem1 = buf.channels()[1];
+  auto elem2 = buf.channels()[2];
+  auto elem3 = buf.channels()[3];
+
+  REQUIRE(*b == elem0);
+  REQUIRE(*(++b) == elem1);
+  REQUIRE(*(++b) == elem2);
+  REQUIRE(*(++b) == elem3);
+}
