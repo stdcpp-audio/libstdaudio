@@ -8,18 +8,20 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-/** A channel, i.e. an audio signal that is digitally sampled using linear
- *  pulse-code modulation and represented as a contiguous sequence of audio samples.
- */
-using channel = strided_span<sample_type>;
+enum class buffer_view_type
+{
+  channels,
+  frames
+};
 
+template <buffer_view_type _Type>
+class buffer_view;
 
-/** A frame, i.e. a contiguous sequence of audio samples, one per channel,
- *  that together represent the amplitudes of a set of audio channels at
- *  some discrete point in time.
- */
-using frame = strided_span<sample_type>;
+/** Convenience type alias for a buffer_view for accessing a buffer by channels. */
+using channel_view = buffer_view<buffer_view_type::channels>;
 
+/** Convenience type alias for a buffer_view for accessing a buffer by frames. */
+using frame_view = buffer_view<buffer_view_type::frames>;
 
 /** Represents different methods to order the samples inside a multi-channel
  *  audio buffer.
@@ -31,7 +33,6 @@ enum class buffer_order : char {
   /** Samples that belong to the same audio channel are contiguous in memory. */
   deinterleaved
 };
-
 
 /** An audio buffer, providing a view into a range of multi-channel audio data.
  *  The buffer does not own the data. Therefore, constructing and copying a
@@ -65,16 +66,17 @@ public:
   /** Returns the ordering of the buffer audio data. */
   buffer_order get_order() const noexcept { return _order; }
 
-  /** A view over the channels of an audio buffer. */
-  using channel_view = strided_span<sample_type>;
+  /** Returns a view for accessing the buffer by channels. */
+  channel_view channels() const noexcept;
 
-  /** Returns a channel view of this buffer. */
-  const channel_view& channels() const noexcept { return _channel_view; }
+  /** Returns a view for accessing the buffer by frames. */
+  frame_view frames() const noexcept;
 
 private:
+  template <buffer_view_type _Type> friend class buffer_view;
   span<sample_type> _data;
+  size_t _num_channels = 0;
   buffer_order _order = buffer_order::interleaved;
-  channel_view _channel_view;
 };
 
 _LIBSTDAUDIO_NAMESPACE_END

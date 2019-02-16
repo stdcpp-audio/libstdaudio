@@ -6,16 +6,88 @@
 
 using namespace std::experimental::audio;
 
-TEST_CASE( "Construct channel view from empty buffer", "[buffer_view]") {
+TEST_CASE( "Empty channel view size", "[buffer_view]") {
   buffer b;
-  channel_view channels(b);
+  channel_view channels = b.channels();
   REQUIRE(channels.empty());
   REQUIRE(channels.size() == 0);
 }
 
-TEST_CASE( "Construct frame view from empty buffer", "[buffer_view]") {
+TEST_CASE( "Empty frame view size", "[buffer_view]") {
   buffer b;
-  frame_view frames(b);
+  frame_view frames = b.frames();
   REQUIRE(frames.empty());
   REQUIRE(frames.size() == 0);
+}
+
+TEST_CASE( "Single-channel interleaved channel view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5};
+  auto buf = buffer(data, 1, buffer_order::interleaved);
+
+  auto channels = buf.channels();
+  REQUIRE(!channels.empty());
+  REQUIRE(channels.size() == 1);
+}
+
+TEST_CASE( "Single-channel interleaved frame view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5};
+  auto buf = buffer(data, 1, buffer_order::interleaved);
+
+  auto frames = buf.frames();
+  REQUIRE(!frames.empty());
+  REQUIRE(frames.size() == 5);
+}
+
+TEST_CASE( "Single-channel deinterleaved channel view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5};
+  auto buf = buffer(data, 1, buffer_order::deinterleaved);
+
+  auto channels = buf.channels();
+  REQUIRE(!channels.empty());
+  REQUIRE(channels.size() == 1);
+}
+
+TEST_CASE( "Single-channel deinterleaved frame view", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5};
+  auto buf = buffer(data, 1, buffer_order::deinterleaved);
+
+  auto frames = buf.frames();
+  REQUIRE(!frames.empty());
+  REQUIRE(frames.size() == 5);
+}
+
+TEST_CASE( "Multi-channel interleaved channel view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+
+  auto channels = buf.channels();
+  REQUIRE(!channels.empty());
+  REQUIRE(channels.size() == 3);
+}
+
+TEST_CASE( "Multi-channel interleaved frame view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::interleaved);
+
+  auto frames = buf.frames();
+  REQUIRE(!frames.empty());
+  REQUIRE(frames.size() == 2);
+}
+
+TEST_CASE( "Multi-channel deinterleaved channel view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+
+  auto channels = buf.channels();
+  REQUIRE(!channels.empty());
+  REQUIRE(channels.size() == 3);
+}
+
+TEST_CASE( "Multie-channel deinterleaved frame view size", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+
+  auto frames = buf.frames();
+  REQUIRE(!frames.empty());
+  REQUIRE(frames.size() == 2);
 }

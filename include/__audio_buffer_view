@@ -7,17 +7,14 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-enum class buffer_view_type
-{
-  channels,
-  frames
-};
-
 /** A read-only collection view of a ​buffer​ that is crafted such that it iterates
  *  over the channels or frames of the underlying buffer as appropriate.
  *  Note that it is not actually a container because it returns by value rather
  *  than by reference. The type that it returns is itself a collection view into
  *  the underlying buffer, which means that it does not own the data.
+ *
+ *  buffer_view is not instantiable by the user. The only way to obtain an instance
+ *  of a buffer_view is by calling buffer::channels() or buffer::frames().
  */
 template <buffer_view_type _Type>
 class buffer_view
@@ -28,18 +25,18 @@ public:
   using index_type = ptrdiff_t;
   using difference_type = ptrdiff_t;
 
-  buffer_view(buffer& buf) : _buf(buf) {
-
+  buffer_view(const buffer& buf) noexcept
+    : _buf(buf){
   }
 
-  size_t size() const noexcept {
-    // TODO: implement
-    return 0;
+  size_type size() const noexcept {
+    return _Type == buffer_view_type::channels
+      ? _buf._num_channels
+      : _buf._num_channels == 0 ? 0 : _buf._data.size() / _buf._num_channels;
   }
 
   bool empty() const noexcept {
-    // TODO: implement
-    return true;
+    return _buf.empty();
   }
 
   value_type operator[](index_type index) {
@@ -68,7 +65,7 @@ public:
   }
 
 private:
-  buffer& _buf;
+  const buffer& _buf;
 };
 
 /** Convenience type alias for a buffer_view for accessing a buffer by channels. */
