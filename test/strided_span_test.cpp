@@ -52,3 +52,13 @@ TEST_CASE( "Span with stride", "[strided_span]") {
     REQUIRE(*iter % 3 == 1);
 }
 
+TEST_CASE( "at", "[strided_span]") {
+  std::array<int, 9> a{1, 2, 3, 4, 5, 6, 7, 8, 9};
+  strided_span sspan(a.data(), a.size(), 3);
+
+  REQUIRE_THROWS_AS(sspan.at(-1), std::out_of_range);
+  REQUIRE(sspan.at(0) == sspan[0]);
+  REQUIRE(sspan.at(1) == sspan[1]);
+  REQUIRE(sspan.at(2) == sspan[2]);
+  REQUIRE_THROWS_AS(sspan.at(3), std::out_of_range);
+}
