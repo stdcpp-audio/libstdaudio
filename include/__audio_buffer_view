@@ -39,16 +39,32 @@ public:
 
   value_type operator[](index_type index) {
     if constexpr (_Type == buffer_view_type::channels) {
-      const auto offset = index;
-      const auto stride = static_cast<value_type::index_type>(_buf._num_channels);
-      const auto size = _buf._data.size();
-      return {_buf._data.data() + offset, size, stride};
+      if (_buf.get_order() == buffer_order::interleaved) {
+        const auto offset = index;
+        const auto stride = _buf._num_channels;
+        const auto size = _buf._data.size();
+        return {_buf._data.data() + offset, size, stride};
+      }
+      else {
+        const auto offset = index * _buf._data.size() / _buf._num_channels;
+        const auto stride = value_type::index_type{1};
+        const auto size = _buf._data.size() / _buf._num_channels;
+        return {_buf._data.data() + offset, size, stride};
+      }
     }
     else {
-      const auto offset = index * static_cast<value_type::index_type>(_buf._num_channels);
-      const auto stride = value_type::index_type{1};
-      const auto size = static_cast<value_type::index_type>(_buf._num_channels);
-      return {_buf._data.data() + offset, size, stride};
+      if (_buf.get_order() == buffer_order::interleaved) {
+        const auto offset = index * _buf._num_channels;
+        const auto stride = value_type::index_type{1};
+        const auto size = _buf._num_channels;
+        return {_buf._data.data() + offset, size, stride};
+      }
+      else {
+        const auto offset = index;
+        const auto stride = _buf._data.size() / _buf._num_channels;
+        const auto size = _buf._data.size();
+        return {_buf._data.data() + offset, size, stride};
+      }
     }
   }
 

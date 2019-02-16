@@ -14,7 +14,7 @@ TEST_CASE( "Buffer default constructor", "[buffer]") {
   // TODO: is this the correct default? Or should we have buffer_order::none?
   // On the other hand, none would create a new class invariant and a new constructor
   // precondition (ordering shall be none if no data, and non-none if there is data)
-  REQUIRE(buf.get_order() == audio::buffer_order::interleaved   );
+  REQUIRE(buf.get_order() == audio::buffer_order::interleaved);
 }
 
 TEST_CASE( "Buffer empty()", "[buffer]") {

@@ -7,7 +7,7 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-buffer::buffer(span<sample_type> data, size_t num_channels, buffer_order ordering)
+buffer::buffer(span<sample_type> data, index_type num_channels, buffer_order ordering)
   : _data(data), _num_channels(num_channels), _order(ordering) {
   assert(data.size() % num_channels == 0);
 }

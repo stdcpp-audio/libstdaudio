@@ -61,10 +61,11 @@ namespace {
     auto* data_ptr = reinterpret_cast<sample_type*>(ca_buffer.mData);
     const size_t data_size = ca_buffer.mDataByteSize / sizeof(sample_type);
 
-    auto data = span<sample_type>(data_ptr, static_cast<span<sample_type>::index_type>(data_size));
-    // TODO: the static_cast is necessary because span's index_type is currently signed!
-
-    return {data, num_channels, buffer_order::interleaved};
+    return {
+      span<sample_type>{data_ptr, static_cast<span<sample_type>::index_type>(data_size)},
+      static_cast<span<sample_type>::index_type>(num_channels),
+      buffer_order::interleaved
+    };
   }
 
   bool coreaudio_fill_buffer_list(const AudioBufferList *ca_input_bl,

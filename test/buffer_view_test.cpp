@@ -125,3 +125,38 @@ TEST_CASE( "Interleaved frame view elements", "[buffer_view]") {
   REQUIRE(frames[1][1] == 5);
   REQUIRE(frames[1][2] == 6);
 }
+
+TEST_CASE( "Deinterleaved channel view elements", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+
+  auto channels = buf.channels();
+  REQUIRE(channels[0].size() == 2);
+  REQUIRE(channels[0][0] == 1);
+  REQUIRE(channels[0][1] == 2);
+
+  REQUIRE(channels[1].size() == 2);
+  REQUIRE(channels[1][0] == 3);
+  REQUIRE(channels[1][1] == 4);
+
+  REQUIRE(channels[2].size() == 2);
+  REQUIRE(channels[2][0] == 5);
+  REQUIRE(channels[2][1] == 6);
+}
+
+TEST_CASE( "Deinterleaved frame view elements", "[buffer_view]") {
+  float data[] = {1, 2, 3, 4, 5, 6};
+  auto buf = buffer(data, 3, buffer_order::deinterleaved);
+
+  auto frames = buf.frames();
+  REQUIRE(frames[0].size() == 3);
+  REQUIRE(frames[0][0] == 1);
+  REQUIRE(frames[0][1] == 3);
+  REQUIRE(frames[0][2] == 5);
+
+  REQUIRE(frames[1].size() == 3);
+  REQUIRE(frames[1][0] == 2);
+  REQUIRE(frames[1][1] == 4);
+  REQUIRE(frames[1][2] == 6);
+}
+

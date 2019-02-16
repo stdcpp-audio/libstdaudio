@@ -52,7 +52,7 @@ public:
    *
    *  Expects: data.size() is a multiple of num_channels.
    */
-  buffer(span<sample_type> data, size_t num_channels, buffer_order ordering);
+  buffer(span<sample_type> data, index_type num_channels, buffer_order ordering);
 
   /** Returns a view of the raw audio data. */
   span<sample_type> raw() const noexcept { return _data; }
@@ -75,7 +75,7 @@ public:
 private:
   template <buffer_view_type _Type> friend class buffer_view;
   span<sample_type> _data;
-  size_t _num_channels = 0;
+  index_type _num_channels = 0;
   buffer_order _order = buffer_order::interleaved;
 };
 
