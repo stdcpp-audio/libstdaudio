@@ -151,7 +151,7 @@ public:
     return {_data + _size, _stride};
   }
 
-  reference operator[](index_type i) const {
+  reference operator[](index_type i) const noexcept {
     return _data[_stride * i];
   }
 
