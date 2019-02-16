@@ -9,8 +9,8 @@ using namespace std::experimental;
 TEST_CASE( "Construct empty buffer list", "[buffer_list]") {
   auto bl = audio::buffer_list();
 
-  REQUIRE(bl.input_buffers().size() == 0);
-  REQUIRE(bl.output_buffers().size() == 0);
+  REQUIRE(bl.input_buffers().empty());
+  REQUIRE(bl.output_buffers().empty());
 }
 
 TEST_CASE( "Construct non-empty buffer list", "[buffer_list]") {
