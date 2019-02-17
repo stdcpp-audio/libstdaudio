@@ -1,17 +1,32 @@
 # libstdaudio
 
-This is the first draft of a CoreAudio implementation of the planned Audio TS for C++. 
+This is an implementation of the standard audio API for C++ proposed in P1386.
 
-This is a private repository and work in progess. Please do not share.
+The latest published revision of this proposal can always be found at [https://wg21.link/p1386]([https://wg21.link/p1386).
 
-`include` contains the "audio.h" header, which is the only header users of the library should include.
+## Disclaimer
 
-`examples` contains three example apps:
+This implementation is still a work in progress and may have some rough edges, but it does attempt to follow the API design
+presented in P1386. It does not exactly match P1386, though: as we discover issues and improvements, they might be implemented here first before they appear in the next P1386 revision.
 
-* `print_devices` lists the currently connected audio devices.
+Currently, this implementation works on macOS. We plan to get Windows and Linux implementations done as soon as possible.
+
+## Repository structure
+
+`include` contains the `audio` header, which is the only header users of the library should include. It also contains the header files of the different classes and functions, prefixed with `__audio_`. Please refer to these header files for a documentation of the API as implemented here. (We plan to set up proper documentation soon.)
+
+`examples` contains several example apps, which you can compile and run out of the box, and play around with to get a feel for how to use the library:
+
+* `print_devices` lists the currently connected audio devices and their current configurations.
 
 * `white_noise` plays white noise through the default output device.
 
-* `level_meter` measures the input volume through the microphone, and outputs the current value on cout every second.
+* `sine_wave` plays a 440 Hz sine wave sound through the default output device.
+
+* `level_meter` measures the input volume through the microphone, and continuously outputs the current maximum value on cout.
 
 `test` contains some unit tests written in Catch2.
+
+## How to use
+
+This library uses CMake. Build target `libstdaudio` to build the library. Then, link against it, and include the `audio` header.
