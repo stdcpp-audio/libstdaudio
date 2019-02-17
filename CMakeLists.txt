@@ -17,7 +17,7 @@ endif ()
 
 include_directories(include)
 
-add_library(libstdaudio
+add_library(stdaudio
         src/device.cpp
         src/device_impl.h
         src/buffer.cpp
@@ -26,16 +26,16 @@ add_library(libstdaudio
         src/backend/null_backend.cpp)
 
 add_executable(white_noise examples/white_noise.cpp)
-target_link_libraries(white_noise libstdaudio)
+target_link_libraries(white_noise stdaudio)
 
 add_executable(sine_wave examples/sine_wave.cpp)
-target_link_libraries(sine_wave libstdaudio)
+target_link_libraries(sine_wave stdaudio)
 
 add_executable(level_meter examples/level_meter.cpp)
-target_link_libraries(level_meter libstdaudio)
+target_link_libraries(level_meter stdaudio)
 
 add_executable(print_devices examples/print_devices.cpp)
-target_link_libraries(print_devices libstdaudio)
+target_link_libraries(print_devices stdaudio)
 
 add_executable(test
         test/test_main.cpp
@@ -45,4 +45,4 @@ add_executable(test
         test/device_test.cpp
         test/strided_span_test.cpp)
 
-target_link_libraries(test libstdaudio)
+target_link_libraries(test stdaudio)
