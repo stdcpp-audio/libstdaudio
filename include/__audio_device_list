@@ -5,6 +5,7 @@
 
 #pragma once
 #include <forward_list>
+#include <__audio_config>
 #include <__audio_device>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN

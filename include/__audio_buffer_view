@@ -4,7 +4,7 @@
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
 #pragma once
-#include <__audio_strided_span>
+#include <__audio_config>
 #include <__audio_buffer>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
