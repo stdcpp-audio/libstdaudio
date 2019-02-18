@@ -31,6 +31,9 @@ target_link_libraries(white_noise stdaudio)
 add_executable(sine_wave examples/sine_wave.cpp)
 target_link_libraries(sine_wave stdaudio)
 
+add_executable(melody examples/melody.cpp)
+target_link_libraries(melody stdaudio)
+
 add_executable(level_meter examples/level_meter.cpp)
 target_link_libraries(level_meter stdaudio)
 
