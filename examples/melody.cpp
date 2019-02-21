@@ -33,13 +33,13 @@ struct synth {
     _ms_counter += 1000. / _sample_rate;
     if (_ms_counter >= _note_duration_ms) {
       _ms_counter = 0;
-      _current_note_index++;
-      update();
-    }
-
-    if (_current_note_index >= notes.size()) {
-      stop.store(true);
-      return 0;
+      if (++_current_note_index < notes.size()) {
+        update();
+      }
+      else {
+        stop.store(true);
+        return 0;
+      }
     }
 
     auto next_sample = std::copysign(0.1f, std::sin(_phase));
