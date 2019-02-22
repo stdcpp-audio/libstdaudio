@@ -13,14 +13,14 @@ int main() {
   using namespace std::experimental::audio;
 
   auto d = get_default_output_device();
-  const double frequency_hz = 440.0;
-  const double delta = 2.0 * M_PI * frequency_hz / d.get_sample_rate();
-  double phase = 0;
+  float frequency_hz = 440.0f;
+  float delta = 2.0f * frequency_hz * float(M_PI / d.get_sample_rate());
+  float phase = 0;
 
   d.connect([=](device&, buffer_list& bl) mutable {
     for (auto& buffer : bl.output_buffers()) {
       for (auto& frame : buffer.frames()) {
-        auto next_sample = static_cast<sample_type>(std::sin(phase));
+        float next_sample = std::sin(phase);
         phase += delta;
         for (auto& sample : frame)
           sample = next_sample;
