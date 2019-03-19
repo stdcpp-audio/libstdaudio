@@ -6,6 +6,7 @@
 #pragma once
 #include <vector>
 #include <iterator>
+#include <cassert>
 #include <__audio_config>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN

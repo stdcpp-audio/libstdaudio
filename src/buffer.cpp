@@ -6,6 +6,7 @@
 #include <__audio_buffer>
 #include <__audio_buffer_view>
 #include <vector>
+#include <cassert>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
