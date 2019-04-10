@@ -14,7 +14,9 @@ template <typename _SampleType, typename _BufferOrder>
 class audio_basic_buffer {
 public:
   audio_basic_buffer(_SampleType* data, size_t data_size, size_t num_channels)
-    : _data(data), _num_frames(data_size/num_channels), _num_channels(num_channels) {
+    : _samples(data, data_size), _num_channels(num_channels) {
+    // TODO: currently only interleaved is supported
+    static_assert(is_same_v<_BufferOrder, audio_buffer_order_interleaved>);
   }
 
   size_t size_channels() const noexcept {
@@ -22,28 +24,29 @@ public:
   }
 
   size_t size_frames() const noexcept {
-    return _num_frames;
+    return size_samples() / size_channels();
   }
 
   size_t size_samples() const noexcept {
-    return size_channels() * size_frames();
+    return _samples.size();
   }
 
   size_t size_bytes() const noexcept {
     return size_samples() * sizeof(_SampleType);
   }
 
-  _SampleType* data() const noexcept {
-    return _data;
+  span<_SampleType> samples() const noexcept {
+    return _samples;
   }
 
-  _SampleType& operator()(size_t frame_index, size_t channel_index) const noexcept {
-    return _data[frame_index * _num_channels + channel_index];
+  _SampleType& operator()(size_t frame_index, size_t channel_index) {
+    const size_t index = (_num_channels * frame_index) + channel_index;
+    assert(index < _samples.size());
+    return _samples[index];
   }
 
 private:
-  _SampleType* _data = nullptr;
-  size_t _num_frames = 0;
+  span<_SampleType> _samples = {};
   size_t _num_channels = 0;
 };
 
@@ -61,9 +64,6 @@ struct audio_basic_device_buffers
     -> optional<audio_basic_buffer<_SampleType, _BufferOrder>> {
     return __output_buffer;
   }
-
-private:
-
 };
 
 using audio_buffer = audio_basic_buffer<float, audio_buffer_order_interleaved>;

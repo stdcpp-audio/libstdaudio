@@ -22,9 +22,8 @@ int main() {
 
   device->connect([&](audio_device&, audio_device_buffers& buffers){
     auto buffer = *buffers.output_buffer();
-    float* samples = buffer.data();
-    for (int i = 0; i < buffer.size_samples(); ++i)
-      samples[i] = white_noise(gen);
+    for (auto& sample : buffer.samples())
+      sample = white_noise(gen);
   });
 
   device->start();

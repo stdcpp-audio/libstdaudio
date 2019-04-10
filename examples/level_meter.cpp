@@ -26,9 +26,8 @@ int main() {
 
   device->connect([&](audio_device&, audio_device_buffers& buffers){
     auto buffer = *buffers.input_buffer();
-    float* samples = buffer.data();
-    for (int i = 0; i < buffer.size_samples(); ++i) {
-      float abs_value = std::abs(samples[i]);
+    for (auto& sample : buffer.samples()) {
+      float abs_value = std::abs(sample);
       if (abs_value > max_abs_value)
         max_abs_value.store(abs_value);
     }
