@@ -31,4 +31,4 @@ Currently, this implementation works on macOS. We plan to get Windows and Linux 
 
 ## How to use
 
-This library uses CMake. Build target `libstdaudio` to build the library. Then, link against it, and include the `audio` header.
+This library uses CMake. It is header-only: simply include the `audio` header to use it. However, you must also link against the native audio backend to compile (see `CMAKE_EXE_LINKER_FLAGS` in `CMakeLists.txt`).
