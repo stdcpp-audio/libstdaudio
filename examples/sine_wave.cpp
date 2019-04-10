@@ -10,25 +10,28 @@
 // This example app plays a sine wave of a given frequency for 5 seconds.
 
 int main() {
-  using namespace std::experimental::audio;
+  using namespace std::experimental;
 
-  auto d = get_default_output_device();
+  auto device = get_default_audio_output_device();
+  if (!device)
+    return 1;
+
   float frequency_hz = 440.0f;
-  float delta = 2.0f * frequency_hz * float(M_PI / d.get_sample_rate());
+  float delta = 2.0f * frequency_hz * float(M_PI / device->get_sample_rate());
   float phase = 0;
 
-  d.connect([=](device&, buffer_list& bl) mutable {
-    for (auto& buffer : bl.output_buffers()) {
-      for (auto& frame : buffer.frames()) {
-        float next_sample = std::sin(phase);
-        phase += delta;
-        for (auto& sample : frame)
-          sample = next_sample;
+  device->connect([=](audio_device& device, audio_device_buffers& buffers) mutable {
+    auto buffer = *buffers.output_buffer();
+    for (int frame = 0; frame < buffer.size_frames(); ++frame) {
+      float next_sample = std::sin(phase);
+      phase += delta;
+      for (int channel = 0; channel < buffer.size_channels(); ++channel) {
+        buffer(frame, channel) = next_sample;
       }
     }
   });
 
-  d.start();
+  device->start();
   std::this_thread::sleep_for(std::chrono::seconds(5));
-  d.stop();
+  device->stop();
 }

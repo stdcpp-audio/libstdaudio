@@ -17,23 +17,28 @@ float gain_to_db(float gain) noexcept {
 }
 
 int main() {
-  using namespace std::experimental::audio;
+  using namespace std::experimental;
   std::atomic<float> max_abs_value = 0;
 
-  auto d = get_default_input_device();
-  d.connect([&](device&, buffer_list& bl){
-    for (auto& buffer : bl.input_buffers()) {
-      for (auto& sample : buffer.raw()) {
-        float abs_value = std::abs(sample);
-        if (abs_value > max_abs_value)
-          max_abs_value.store(abs_value);
-      }
+  auto device = get_default_audio_input_device();
+  if (!device)
+    return 1;
+
+  device->connect([&](audio_device&, audio_device_buffers& buffers){
+    auto buffer = *buffers.input_buffer();
+    float* samples = buffer.data();
+    for (int i = 0; i < buffer.size_samples(); ++i) {
+      float abs_value = std::abs(samples[i]);
+      if (abs_value > max_abs_value)
+        max_abs_value.store(abs_value);
     }
   });
 
-  d.start();
+  device->start();
   while(true) {
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
     std::cout << gain_to_db(max_abs_value.exchange(0)) << " dB\n";
   }
+
+  device->stop();
 }

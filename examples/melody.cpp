@@ -26,7 +26,7 @@ float note_to_frequency_hz(int note) {
 
 std::atomic<bool> stop = false;
 
-struct synth {
+struct synthesiser {
   float get_next_sample() {
     assert (_sample_rate > 0);
 
@@ -68,26 +68,30 @@ private:
 
 
 int main() {
-  using namespace std::experimental::audio;
+  using namespace std::experimental;
 
-  auto d = get_default_output_device();
-  auto s = synth{};
-  s.set_sample_rate(float(d.get_sample_rate()));
+  auto device = get_default_audio_output_device();
+  if (!device)
+    return 1;
 
-  d.connect([=](device&, buffer_list& bl) mutable {
-    for (auto& buffer : bl.output_buffers()) {
-      for (auto& frame : buffer.frames()) {
-        auto next_sample = s.get_next_sample();
-        for (auto& sample : frame)
-          sample = next_sample;
+  auto synth = synthesiser();
+  synth.set_sample_rate(float(device->get_sample_rate()));
+
+  device->connect([=](audio_device&, audio_device_buffers& buffers) mutable {
+    auto buffer = *buffers.output_buffer();
+
+    for (int frame = 0; frame < buffer.size_frames(); ++frame) {
+      auto next_sample = synth.get_next_sample();
+      for (int channel = 0; channel < buffer.size_channels(); ++channel) {
+        buffer(frame, channel) = next_sample;
       }
     }
   });
 
-  d.start();
+  device->start();
   while (!stop.load()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(50));
   }
 
-  d.stop();
+  device->stop();
 }
