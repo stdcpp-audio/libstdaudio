@@ -23,6 +23,8 @@ Currently, this implementation works on macOS. We plan to get Windows and Linux 
 
 * `sine_wave` plays a 440 Hz sine wave sound through the default output device.
 
+* `melody` synthesises a short melody using a square wave generator, and plays it through the default output device.
+
 * `level_meter` measures the input volume through the microphone, and continuously outputs the current maximum value on cout.
 
 `test` contains some unit tests written in Catch2.
