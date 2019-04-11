@@ -27,7 +27,12 @@ struct audio_null_driver_t {};
   struct __coreaudio_driver_t {};
   using audio_default_driver_t = __coreaudio_driver_t;
 #else
-  using audio_default_driver_t = audio_null_driver_t;
+
+#if __has_include(<portaudio.h>)
+  struct __portaudio_driver_t {};
+  using audio_default_driver_t = __portaudio_driver_t;
+#endif
+
 #endif // __APPLE__
 
 _LIBSTDAUDIO_NAMESPACE_END
@@ -38,4 +43,7 @@ _LIBSTDAUDIO_NAMESPACE_END
 
 #ifdef __APPLE__
   #include <audio_backend/__coreaudio_backend.h>
+#endif // __APPLE__
+#if __has_include(<portaudio.h>)
+  #include <audio_backend/__portaudio_backend.h>
 #endif // __APPLE__
