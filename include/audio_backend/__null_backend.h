@@ -8,11 +8,7 @@
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 template<>
-class audio_basic_device<audio_null_driver_t>
-{
-public:
-  audio_basic_device() = delete;
-};
+class audio_basic_device<audio_null_driver_t> {};
 
 template<>
 class audio_basic_device_list<audio_null_driver_t>
@@ -23,7 +19,10 @@ private:
     auto operator==(const iterator&) const noexcept { return true; }
     auto operator!=(const iterator&) const noexcept { return false; }
     auto operator++() -> const iterator& { assert(false); return *this; }
-    auto operator*() -> audio_basic_device<audio_null_driver_t>& { assert(false); }
+    auto operator*() -> audio_basic_device<audio_null_driver_t>& {
+      assert(false); static audio_basic_device<audio_null_driver_t> device{};
+      return device;
+    }
   };
 
 public:
