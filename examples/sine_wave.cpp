@@ -24,7 +24,7 @@ int main() {
     auto buffer = *buffers.output_buffer();
     for (int frame = 0; frame < buffer.size_frames(); ++frame) {
       float next_sample = std::sin(phase);
-      phase += delta;
+      phase = std::fmod(phase + delta, 2.0f * M_PI);
       for (int channel = 0; channel < buffer.size_channels(); ++channel) {
         buffer(frame, channel) = next_sample;
       }
