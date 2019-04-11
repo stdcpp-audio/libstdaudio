@@ -6,6 +6,9 @@
 #pragma once
 
 #include <optional>
+#include <cassert>
+#include <string_view>
+#include <atomic>
 
 // TODO: this is a temporary measure until std::span becomes available
 #include "cpp/span.hpp"

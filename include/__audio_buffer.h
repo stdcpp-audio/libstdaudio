@@ -4,7 +4,6 @@
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
 #pragma once
-
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 struct audio_buffer_order_interleaved {};

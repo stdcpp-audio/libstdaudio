@@ -5,7 +5,7 @@
 
 #include <iostream>
 #include <audio>
-
+#include <cassert>
 using namespace std::experimental;
 
 void print_device_info(const audio_device& d) {
