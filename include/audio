@@ -4,39 +4,7 @@
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
 #pragma once
-
-#include <optional>
-#include <cassert>
-#include <string_view>
-#include <atomic>
-
-// TODO: this is a temporary measure until std::span becomes available
-#include "cpp/span.hpp"
-using namespace TCB_SPAN_NAMESPACE_NAME;
-
-#define _LIBSTDAUDIO_NAMESPACE std::experimental
-
-#define _LIBSTDAUDIO_NAMESPACE_BEGIN namespace _LIBSTDAUDIO_NAMESPACE {
-#define _LIBSTDAUDIO_NAMESPACE_END }
-
-_LIBSTDAUDIO_NAMESPACE_BEGIN
-
-struct audio_null_driver_t {};
-
-#ifdef __APPLE__
-  struct __coreaudio_driver_t {};
-  using audio_default_driver_t = __coreaudio_driver_t;
-#else
-
-#if __has_include(<portaudio.h>)
-  struct __portaudio_driver_t {};
-  using audio_default_driver_t = __portaudio_driver_t;
-#endif
-
-#endif // __APPLE__
-
-_LIBSTDAUDIO_NAMESPACE_END
-
+#include <__audio_base.h>
 #include <__audio_buffer.h>
 #include <__audio_device.h>
 #include <audio_backend/__null_backend.h>
@@ -46,4 +14,7 @@ _LIBSTDAUDIO_NAMESPACE_END
 #endif // __APPLE__
 #if __has_include(<portaudio.h>)
   #include <audio_backend/__portaudio_backend.h>
-#endif // __APPLE__
+#endif
+#if __has_include(<pulse/pulseaudio.h>)
+  #include <audio_backend/__pulseaudio_backend.h>
+#endif
