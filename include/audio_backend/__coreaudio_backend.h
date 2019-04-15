@@ -5,6 +5,10 @@
 
 #pragma once
 
+#include <__audio_base.h>
+#include <__audio_device.h>
+#include <__audio_buffer.h>
+#include <__audio_exception.h>
 #include <cctype>
 #include <string>
 #include <iostream>
@@ -69,12 +73,6 @@ private:
   static void _log_message(const string& s) {
     // TODO: only do this in DEBUG
     cerr << "__coreaudio_backend error: " << s << endl;
-  }
-};
-
-struct audio_device_exception : public runtime_error {
-  explicit audio_device_exception(const char* what)
-    : runtime_error(what) {
   }
 };
 

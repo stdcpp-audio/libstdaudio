@@ -4,6 +4,7 @@
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
 #pragma once
+#include <__audio_base.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
