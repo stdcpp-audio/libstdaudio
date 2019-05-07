@@ -5,13 +5,115 @@
 
 #pragma once
 
+#include <string_view>
+#include <chrono>
+
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-template<>
-class audio_device<audio_null_driver_t> {};
+class audio_device {
+public:
+  audio_device() = delete;
 
-template<>
-class audio_device_list<audio_null_driver_t>
+  string_view name() const noexcept {
+    return {};
+  }
+
+  using device_id_t = unsigned;
+
+  device_id_t device_id() const noexcept {
+    return {};
+  }
+
+  bool is_input() const noexcept {
+    return false;
+  }
+
+  bool is_output() const noexcept {
+    return false;
+  }
+
+  int get_num_input_channels() const noexcept {
+    return 0;
+  }
+
+  int get_num_output_channels() const noexcept {
+    return 0;
+  }
+
+  using sample_rate_t = unsigned;
+
+  sample_rate_t get_sample_rate() const noexcept {
+    return {};
+  }
+
+  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
+    return {};
+  }
+
+  bool set_sample_rate(sample_rate_t) {
+    return false;
+  }
+
+  using buffer_size_t  = unsigned;
+
+  buffer_size_t get_buffer_size_frames() const noexcept {
+    return {};
+  }
+
+  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
+    return {};
+  }
+
+  bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
+    return false;
+  }
+
+  template <typename _SampleType>
+  constexpr bool supports_sample_type() const noexcept {
+    return false;
+  }
+
+  constexpr bool can_connect() const noexcept {
+    return false;
+  }
+
+  constexpr bool can_process() const noexcept {
+    return false;
+  }
+
+  bool start() {
+    return false;
+  }
+
+  bool stop() {
+    return false;
+  }
+
+  bool is_running() const noexcept {
+    return false;
+  }
+
+  void wait() const {
+    assert(false);
+  }
+
+  template<class _Rep, class _Period>
+  void wait_for(chrono::duration<_Rep, _Period> rel_time) const {
+    assert(false);
+  }
+
+  template<class _Clock, class _Duration>
+  void wait_until(chrono::time_point<_Clock, _Duration> abs_time) const {
+    assert(false);
+  }
+
+  template <typename _CallbackType>
+  void process(_CallbackType&) {
+    assert(false);
+  }
+};
+
+class audio_device_list
 {
 private:
   class iterator {
@@ -19,8 +121,8 @@ private:
     auto operator==(const iterator&) const noexcept { return true; }
     auto operator!=(const iterator&) const noexcept { return false; }
     auto operator++() -> const iterator& { assert(false); return *this; }
-    auto operator*() -> audio_device<audio_null_driver_t>& {
-      assert(false); static audio_device<audio_null_driver_t> device{};
+    auto operator*() -> audio_device& {
+      assert(false); static audio_device device{};
       return device;
     }
   };
@@ -31,31 +133,19 @@ public:
   auto empty() -> bool { return true; }
 };
 
-template<>
-auto get_default_audio_input_device<audio_null_driver_t>()
-  -> optional<audio_device<audio_null_driver_t>>
-{
+optional<audio_device> get_default_audio_input_device() {
   return {};
 }
 
-template<>
-auto get_default_audio_output_device<audio_null_driver_t>()
-  -> optional<audio_device<audio_null_driver_t>>
-{
+optional<audio_device> get_default_audio_output_device() {
   return {};
 }
 
-template<>
-auto get_audio_input_device_list<audio_null_driver_t>()
-  -> audio_device_list<audio_null_driver_t>
-{
+audio_device_list get_audio_input_device_list() {
   return {};
 }
 
-template<>
-auto get_audio_output_device_list<audio_null_driver_t>()
-  -> audio_device_list<audio_null_driver_t>
-{
+audio_device_list get_audio_output_device_list() {
   return {};
 }
 
