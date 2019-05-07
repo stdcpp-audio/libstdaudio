@@ -8,10 +8,10 @@
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 template<>
-class audio_basic_device<audio_null_driver_t> {};
+class audio_device<audio_null_driver_t> {};
 
 template<>
-class audio_basic_device_list<audio_null_driver_t>
+class audio_device_list<audio_null_driver_t>
 {
 private:
   class iterator {
@@ -19,8 +19,8 @@ private:
     auto operator==(const iterator&) const noexcept { return true; }
     auto operator!=(const iterator&) const noexcept { return false; }
     auto operator++() -> const iterator& { assert(false); return *this; }
-    auto operator*() -> audio_basic_device<audio_null_driver_t>& {
-      assert(false); static audio_basic_device<audio_null_driver_t> device{};
+    auto operator*() -> audio_device<audio_null_driver_t>& {
+      assert(false); static audio_device<audio_null_driver_t> device{};
       return device;
     }
   };
@@ -33,28 +33,28 @@ public:
 
 template<>
 auto get_default_audio_input_device<audio_null_driver_t>()
-  -> optional<audio_basic_device<audio_null_driver_t>>
+  -> optional<audio_device<audio_null_driver_t>>
 {
   return {};
 }
 
 template<>
 auto get_default_audio_output_device<audio_null_driver_t>()
-  -> optional<audio_basic_device<audio_null_driver_t>>
+  -> optional<audio_device<audio_null_driver_t>>
 {
   return {};
 }
 
 template<>
 auto get_audio_input_device_list<audio_null_driver_t>()
-  -> audio_basic_device_list<audio_null_driver_t>
+  -> audio_device_list<audio_null_driver_t>
 {
   return {};
 }
 
 template<>
 auto get_audio_output_device_list<audio_null_driver_t>()
-  -> audio_basic_device_list<audio_null_driver_t>
+  -> audio_device_list<audio_null_driver_t>
 {
   return {};
 }

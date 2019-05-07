@@ -77,15 +77,12 @@ struct audio_device_exception : public runtime_error {
   }
 };
 
-using __coreaudio_device = audio_basic_device<__coreaudio_driver_t>;
-
-template<>
-class audio_basic_device<__coreaudio_driver_t>
+class audio_device
 {
 public:
-  audio_basic_device() = delete;
+  audio_device() = delete;
 
-  ~audio_basic_device() {
+  ~audio_device() {
     stop();
   }
 
@@ -212,7 +209,7 @@ public:
   }
 
   template <typename _SampleType>
-  constexpr bool supports_audio_buffer_type() const noexcept {
+  constexpr bool supports_sample_type() const noexcept {
     return is_same_v<_SampleType, __coreaudio_native_sample_type>;
   }
 
@@ -295,9 +292,9 @@ public:
   }
 
 private:
-  friend class __coreaudio_device_enumerator;
+  friend class audio_device_enumerator;
 
-  audio_basic_device(device_id_t device_id, string name, __coreaudio_stream_config config)
+  audio_device(device_id_t device_id, string name, __coreaudio_stream_config config)
   : _device_id(device_id),
     _name(move(name)),
     _config(config) {
@@ -317,7 +314,7 @@ private:
                                    const AudioTimeStamp *,
                                    void *void_ptr_to_this_device) {
     assert (void_ptr_to_this_device != nullptr);
-    __coreaudio_device& this_device = *reinterpret_cast<__coreaudio_device*>(void_ptr_to_this_device);
+    audio_device& this_device = *reinterpret_cast<audio_device*>(void_ptr_to_this_device);
 
     _fill_buffers(input_data, output_data, this_device._current_buffers);
 
@@ -422,25 +419,22 @@ private:
   vector<sample_rate_t> _supported_sample_rates;
   vector<buffer_size_t> _supported_buffer_sizes;
 
-  using __coreaudio_callback_t = function<void(__coreaudio_device&, audio_device_io<__coreaudio_native_sample_type>&)>;
+  using __coreaudio_callback_t = function<void(audio_device&, audio_device_io<__coreaudio_native_sample_type>&)>;
   __coreaudio_callback_t _user_callback;
   audio_device_io<__coreaudio_native_sample_type> _current_buffers;
 };
 
-template<>
-class audio_basic_device_list<__coreaudio_driver_t> : public forward_list<__coreaudio_device> {
+class audio_device_list : public forward_list<audio_device> {
 };
 
-using __coreaudio_device_list = audio_basic_device_list<__coreaudio_driver_t>;
-
-class __coreaudio_device_enumerator {
+class audio_device_enumerator {
 public:
-  static __coreaudio_device_enumerator& get_instance() {
-    static __coreaudio_device_enumerator cde;
+  static audio_device_enumerator& get_instance() {
+    static audio_device_enumerator cde;
     return cde;
   }
 
-  optional<__coreaudio_device> get_default_io_device(AudioObjectPropertySelector selector) {
+  optional<audio_device> get_default_io_device(AudioObjectPropertySelector selector) {
     AudioObjectPropertyAddress pa = {
       selector,
       kAudioObjectPropertyScopeGlobal,
@@ -459,7 +453,7 @@ public:
 
   template <typename Condition>
   auto get_device_list(Condition condition) {
-    __coreaudio_device_list devices;
+    audio_device_list devices;
     const auto device_ids = get_device_ids();
 
     for (const auto device_id : device_ids) {
@@ -472,19 +466,19 @@ public:
   }
 
   auto get_input_device_list() {
-    return get_device_list([](const __coreaudio_device& d){
+    return get_device_list([](const audio_device& d){
       return d.is_input();
     });
   }
 
   auto get_output_device_list() {
-    return get_device_list([](const __coreaudio_device& d){
+    return get_device_list([](const audio_device& d){
       return d.is_output();
     });
   }
 
 private:
-  __coreaudio_device_enumerator() = default;
+  audio_device_enumerator() = default;
 
   static vector<AudioDeviceID> get_device_ids() {
     AudioObjectPropertyAddress pa = {
@@ -513,7 +507,7 @@ private:
     return device_ids;
   }
 
-  static __coreaudio_device get_device(AudioDeviceID device_id) {
+  static audio_device get_device(AudioDeviceID device_id) {
     string name = get_device_name(device_id);
     auto config = get_device_io_stream_config(device_id);
 
@@ -572,34 +566,29 @@ private:
   }
 };
 
-template<>
-auto get_default_audio_input_device<__coreaudio_driver_t>()
-  -> optional<audio_basic_device<__coreaudio_driver_t>>
+auto get_default_audio_input_device()
+  -> optional<audio_device>
 {
-  return __coreaudio_device_enumerator::get_instance().get_default_io_device(
+  return audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultInputDevice);
 }
 
-template<>
-auto get_default_audio_output_device<__coreaudio_driver_t>()
-  -> optional<audio_basic_device<__coreaudio_driver_t>>
+auto get_default_audio_output_device()
+  -> optional<audio_device>
 {
-  return __coreaudio_device_enumerator::get_instance().get_default_io_device(
+  return audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultOutputDevice);
 }
 
-template<>
-auto get_audio_input_device_list<__coreaudio_driver_t>()
-  -> audio_basic_device_list<__coreaudio_driver_t>
+auto get_audio_input_device_list()
+  -> audio_device_list
 {
-  return __coreaudio_device_enumerator::get_instance().get_input_device_list();
+  return audio_device_enumerator::get_instance().get_input_device_list();
 }
-
-template<>
-auto get_audio_output_device_list<__coreaudio_driver_t>()
-  -> audio_basic_device_list<__coreaudio_driver_t>
+auto get_audio_output_device_list()
+  -> audio_device_list
 {
-  return __coreaudio_device_enumerator::get_instance().get_output_device_list();
+  return audio_device_enumerator::get_instance().get_output_device_list();
 }
 
 _LIBSTDAUDIO_NAMESPACE_END

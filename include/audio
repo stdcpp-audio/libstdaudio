@@ -16,23 +16,11 @@ using namespace TCB_SPAN_NAMESPACE_NAME;
 #define _LIBSTDAUDIO_NAMESPACE_BEGIN namespace _LIBSTDAUDIO_NAMESPACE {
 #define _LIBSTDAUDIO_NAMESPACE_END }
 
-_LIBSTDAUDIO_NAMESPACE_BEGIN
-
-struct audio_null_driver_t {};
-
-#ifdef __APPLE__
-  struct __coreaudio_driver_t {};
-  using audio_default_driver_t = __coreaudio_driver_t;
-#else
-  using audio_default_driver_t = audio_null_driver_t;
-#endif // __APPLE__
-
-_LIBSTDAUDIO_NAMESPACE_END
-
 #include <__audio_buffer.h>
 #include <__audio_device.h>
-#include <audio_backend/__null_backend.h>
 
 #ifdef __APPLE__
   #include <audio_backend/__coreaudio_backend.h>
+#else
+  #include <audio_backend/__null_backend.h>
 #endif // __APPLE__

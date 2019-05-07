@@ -7,25 +7,13 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-template <typename _AudioDriverType>
-class audio_basic_device;
+class audio_device;
+class audio_device_list;
 
-template <typename _AudioDriverType>
-class audio_basic_device_list;
+optional<audio_device> get_default_audio_input_device();
+optional<audio_device> get_default_audio_output_device();
 
-template <typename _AudioDriverType = audio_default_driver_t>
-optional<audio_basic_device<_AudioDriverType>> get_default_audio_input_device();
-
-template <typename _AudioDriverType = audio_default_driver_t>
-optional<audio_basic_device<_AudioDriverType>> get_default_audio_output_device();
-
-template <typename _AudioDriverType = audio_default_driver_t>
-audio_basic_device_list<_AudioDriverType> get_audio_input_device_list();
-
-template <typename _AudioDriverType = audio_default_driver_t>
-audio_basic_device_list<_AudioDriverType> get_audio_output_device_list();
-
-using audio_device = audio_basic_device<audio_default_driver_t>;
-using audio_device_list = audio_basic_device_list<audio_default_driver_t>;
+audio_device_list get_audio_input_device_list();
+audio_device_list get_audio_output_device_list();
 
 _LIBSTDAUDIO_NAMESPACE_END
