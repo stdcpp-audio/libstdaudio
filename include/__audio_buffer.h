@@ -46,7 +46,7 @@ private:
 };
 
 template <typename _SampleType>
-struct audio_device_buffers
+struct audio_device_io
 {
   optional<audio_buffer<_SampleType>> __input_buffer;
   optional<audio_buffer<_SampleType>> __output_buffer;

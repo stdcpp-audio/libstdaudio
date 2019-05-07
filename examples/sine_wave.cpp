@@ -20,7 +20,7 @@ int main() {
   float delta = 2.0f * frequency_hz * float(M_PI / device->get_sample_rate());
   float phase = 0;
 
-  device->connect([=](audio_device& device, audio_device_buffers<float>& buffers) mutable {
+  device->connect([=](audio_device& device, audio_device_io<float>& buffers) mutable {
     auto buffer = *buffers.output_buffer();
     for (int frame = 0; frame < buffer.size_frames(); ++frame) {
       float next_sample = std::sin(phase);

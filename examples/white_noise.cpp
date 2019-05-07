@@ -20,7 +20,7 @@ int main() {
   if (!device)
     return 1;
 
-  device->connect([&](audio_device&, audio_device_buffers<float>& buffers){
+  device->connect([&](audio_device&, audio_device_io<float>& buffers){
     auto buffer = *buffers.output_buffer();
     for (auto& sample : buffer.samples())
       sample = white_noise(gen);

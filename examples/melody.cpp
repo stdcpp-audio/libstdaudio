@@ -77,7 +77,7 @@ int main() {
   auto synth = synthesiser();
   synth.set_sample_rate(float(device->get_sample_rate()));
 
-  device->connect([=](audio_device&, audio_device_buffers<float>& buffers) mutable {
+  device->connect([=](audio_device&, audio_device_io<float>& buffers) mutable {
     auto buffer = *buffers.output_buffer();
 
     for (int frame = 0; frame < buffer.size_frames(); ++frame) {

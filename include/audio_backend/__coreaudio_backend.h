@@ -327,7 +327,7 @@ private:
 
   static void _fill_buffers(const AudioBufferList* input_bl,
                             const AudioBufferList* output_bl,
-                            audio_device_buffers<__coreaudio_native_sample_type>& buffers) {
+                            audio_device_io<__coreaudio_native_sample_type>& buffers) {
     assert(input_bl != nullptr);
     assert(output_bl != nullptr);
 
@@ -422,9 +422,9 @@ private:
   vector<sample_rate_t> _supported_sample_rates;
   vector<buffer_size_t> _supported_buffer_sizes;
 
-  using __coreaudio_callback_t = function<void(__coreaudio_device&, audio_device_buffers<__coreaudio_native_sample_type>&)>;
+  using __coreaudio_callback_t = function<void(__coreaudio_device&, audio_device_io<__coreaudio_native_sample_type>&)>;
   __coreaudio_callback_t _user_callback;
-  audio_device_buffers<__coreaudio_native_sample_type> _current_buffers;
+  audio_device_io<__coreaudio_native_sample_type> _current_buffers;
 };
 
 template<>

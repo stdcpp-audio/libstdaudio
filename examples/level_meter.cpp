@@ -24,7 +24,7 @@ int main() {
   if (!device)
     return 1;
 
-  device->connect([&](audio_device&, audio_device_buffers<float>& buffers){
+  device->connect([&](audio_device&, audio_device_io<float>& buffers){
     auto buffer = *buffers.input_buffer();
     for (auto& sample : buffer.samples()) {
       float abs_value = std::abs(sample);
