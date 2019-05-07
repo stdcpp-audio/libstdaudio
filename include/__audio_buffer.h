@@ -7,16 +7,11 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-struct audio_buffer_order_interleaved {};
-struct audio_buffer_order_deinterleaved {};
-
-template <typename _SampleType, typename _BufferOrder>
-class audio_basic_buffer {
+template <typename _SampleType>
+class audio_buffer {
 public:
-  audio_basic_buffer(_SampleType* data, size_t data_size, size_t num_channels)
+  audio_buffer(_SampleType* data, size_t data_size, size_t num_channels)
     : _samples(data, data_size), _num_channels(num_channels) {
-    // TODO: currently only interleaved is supported
-    static_assert(is_same_v<_BufferOrder, audio_buffer_order_interleaved>);
   }
 
   size_t size_channels() const noexcept {
@@ -50,23 +45,20 @@ private:
   size_t _num_channels = 0;
 };
 
-template <typename _SampleType,typename _BufferOrder>
-struct audio_basic_device_buffers
+template <typename _SampleType>
+struct audio_device_buffers
 {
-  optional<audio_basic_buffer<_SampleType, _BufferOrder>> __input_buffer;
-  optional<audio_basic_buffer<_SampleType, _BufferOrder>> __output_buffer;
+  optional<audio_buffer<_SampleType>> __input_buffer;
+  optional<audio_buffer<_SampleType>> __output_buffer;
 
   auto input_buffer() const noexcept
-    -> optional<audio_basic_buffer<_SampleType, _BufferOrder>> {
+    -> optional<audio_buffer<_SampleType>> {
     return __input_buffer;
   }
   auto output_buffer() const noexcept
-    -> optional<audio_basic_buffer<_SampleType, _BufferOrder>> {
+    -> optional<audio_buffer<_SampleType>> {
     return __output_buffer;
   }
 };
-
-using audio_buffer = audio_basic_buffer<float, audio_buffer_order_interleaved>;
-using audio_device_buffers = audio_basic_device_buffers<float, audio_buffer_order_interleaved>;
 
 _LIBSTDAUDIO_NAMESPACE_END

@@ -16,7 +16,6 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // TODO: make __coreaudio_sample_type flexible according to the recommendation (see AudioSampleType).
 using __coreaudio_native_sample_type = float;
-using __coreaudio_native_buffer_order = audio_buffer_order_interleaved;
 
 struct __coreaudio_stream_config {
   AudioBufferList input_config = {0};
@@ -212,10 +211,9 @@ public:
       _device_id, &pa, 0, nullptr, sizeof(buffer_size_t), &new_buffer_size));
   }
 
-  template <typename _SampleType, typename _BufferOrder>
+  template <typename _SampleType>
   constexpr bool supports_audio_buffer_type() const noexcept {
-    return is_same_v<_SampleType, __coreaudio_native_sample_type>
-      && is_same_v<_BufferOrder, __coreaudio_native_buffer_order>;
+    return is_same_v<_SampleType, __coreaudio_native_sample_type>;
   }
 
   constexpr bool can_connect() const noexcept {
@@ -329,7 +327,7 @@ private:
 
   static void _fill_buffers(const AudioBufferList* input_bl,
                             const AudioBufferList* output_bl,
-                            audio_device_buffers& buffers) {
+                            audio_device_buffers<__coreaudio_native_sample_type>& buffers) {
     assert(input_bl != nullptr);
     assert(output_bl != nullptr);
 
@@ -346,7 +344,7 @@ private:
       buffers.__output_buffer = coreaudio_buffer_to_buffer(output_bl->mBuffers[0]);
   }
 
-  static audio_buffer coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {
+  static audio_buffer<__coreaudio_native_sample_type> coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {
     // TODO: allow different sample types here! It will possibly be int16_t instead of float on iOS!
 
     const size_t num_channels = ca_buffer.mNumberChannels;
@@ -424,9 +422,9 @@ private:
   vector<sample_rate_t> _supported_sample_rates;
   vector<buffer_size_t> _supported_buffer_sizes;
 
-  using __coreaudio_callback_t = function<void(__coreaudio_device&, audio_device_buffers&)>;
+  using __coreaudio_callback_t = function<void(__coreaudio_device&, audio_device_buffers<__coreaudio_native_sample_type>&)>;
   __coreaudio_callback_t _user_callback;
-  audio_device_buffers _current_buffers;
+  audio_device_buffers<__coreaudio_native_sample_type> _current_buffers;
 };
 
 template<>
