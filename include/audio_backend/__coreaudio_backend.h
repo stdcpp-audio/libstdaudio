@@ -77,10 +77,9 @@ struct audio_device_exception : public runtime_error {
   }
 };
 
-class audio_device
-{
+class audio_device {
 public:
-  audio_device() = delete;
+    audio_device() = delete;
 
   ~audio_device() {
     stop();
@@ -566,28 +565,21 @@ private:
   }
 };
 
-auto get_default_audio_input_device()
-  -> optional<audio_device>
-{
+optional<audio_device> get_default_audio_input_device() {
   return audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultInputDevice);
 }
 
-auto get_default_audio_output_device()
-  -> optional<audio_device>
-{
+optional<audio_device> get_default_audio_output_device() {
   return audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultOutputDevice);
 }
 
-auto get_audio_input_device_list()
-  -> audio_device_list
-{
+audio_device_list get_audio_input_device_list() {
   return audio_device_enumerator::get_instance().get_input_device_list();
 }
-auto get_audio_output_device_list()
-  -> audio_device_list
-{
+
+audio_device_list get_audio_output_device_list() {
   return audio_device_enumerator::get_instance().get_output_device_list();
 }
 
