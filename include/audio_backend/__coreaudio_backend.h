@@ -335,10 +335,10 @@ private:
     assert(num_output_buffers == 0 || num_output_buffers == 1);
 
     if (num_input_buffers == 1)
-      buffers.__input_buffer = coreaudio_buffer_to_buffer(input_bl->mBuffers[0]);
+      buffers.input_buffer = coreaudio_buffer_to_buffer(input_bl->mBuffers[0]);
 
     if (num_output_buffers == 1)
-      buffers.__output_buffer = coreaudio_buffer_to_buffer(output_bl->mBuffers[0]);
+      buffers.output_buffer = coreaudio_buffer_to_buffer(output_bl->mBuffers[0]);
   }
 
   static audio_buffer<__coreaudio_native_sample_type> coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {

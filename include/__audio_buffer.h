@@ -48,17 +48,8 @@ private:
 template <typename _SampleType>
 struct audio_device_io
 {
-  optional<audio_buffer<_SampleType>> __input_buffer;
-  optional<audio_buffer<_SampleType>> __output_buffer;
-
-  auto input_buffer() const noexcept
-    -> optional<audio_buffer<_SampleType>> {
-    return __input_buffer;
-  }
-  auto output_buffer() const noexcept
-    -> optional<audio_buffer<_SampleType>> {
-    return __output_buffer;
-  }
+  optional<audio_buffer<_SampleType>> input_buffer;
+  optional<audio_buffer<_SampleType>> output_buffer;
 };
 
 _LIBSTDAUDIO_NAMESPACE_END

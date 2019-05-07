@@ -23,5 +23,4 @@ add_executable(level_meter examples/level_meter.cpp)
 
 add_executable(test
         test/test_main.cpp
-      #  test/null_backend_test.cpp // TODO: fix linker error when uncommenting this one!
-        test/default_backend_test.cpp)
+        test/audio_device_test.cpp)

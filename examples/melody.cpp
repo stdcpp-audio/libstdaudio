@@ -77,14 +77,17 @@ int main() {
   auto synth = synthesiser();
   synth.set_sample_rate(float(device->get_sample_rate()));
 
-  device->connect([=](audio_device&, audio_device_io<float>& buffers) mutable {
-    auto buffer = *buffers.output_buffer();
+  device->connect([=](audio_device&, audio_device_io<float>& io) mutable {
+    if (!io.output_buffer.has_value())
+      return;
 
-    for (int frame = 0; frame < buffer.size_frames(); ++frame) {
+    auto& out = *io.output_buffer;
+
+    for (int frame = 0; frame < out.size_frames(); ++frame) {
       auto next_sample = synth.get_next_sample();
-      for (int channel = 0; channel < buffer.size_channels(); ++channel) {
-        buffer(frame, channel) = next_sample;
-      }
+
+      for (int channel = 0; channel < out.size_channels(); ++channel)
+        out(frame, channel) = next_sample;
     }
   });
 

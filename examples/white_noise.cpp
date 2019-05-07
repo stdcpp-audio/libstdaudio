@@ -20,9 +20,12 @@ int main() {
   if (!device)
     return 1;
 
-  device->connect([&](audio_device&, audio_device_io<float>& buffers){
-    auto buffer = *buffers.output_buffer();
-    for (auto& sample : buffer.samples())
+  device->connect([&](audio_device&, audio_device_io<float>& io){
+    if (!io.output_buffer.has_value())
+      return;
+
+    auto& out = *io.output_buffer;
+    for (auto& sample : out.samples())
       sample = white_noise(gen);
   });
 

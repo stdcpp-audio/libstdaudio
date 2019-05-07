@@ -20,14 +20,18 @@ int main() {
   float delta = 2.0f * frequency_hz * float(M_PI / device->get_sample_rate());
   float phase = 0;
 
-  device->connect([=](audio_device& device, audio_device_io<float>& buffers) mutable {
-    auto buffer = *buffers.output_buffer();
-    for (int frame = 0; frame < buffer.size_frames(); ++frame) {
+  device->connect([=](audio_device& device, audio_device_io<float>& io) mutable {
+    if (!io.output_buffer.has_value())
+      return;
+
+    auto& out = *io.output_buffer;
+
+    for (int frame = 0; frame < out.size_frames(); ++frame) {
       float next_sample = std::sin(phase);
       phase = std::fmod(phase + delta, 2.0f * M_PI);
-      for (int channel = 0; channel < buffer.size_channels(); ++channel) {
-        buffer(frame, channel) = next_sample;
-      }
+
+      for (int channel = 0; channel < out.size_channels(); ++channel)
+        out(frame, channel) = next_sample;
     }
   });
 

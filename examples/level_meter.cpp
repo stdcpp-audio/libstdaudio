@@ -24,9 +24,13 @@ int main() {
   if (!device)
     return 1;
 
-  device->connect([&](audio_device&, audio_device_io<float>& buffers){
-    auto buffer = *buffers.input_buffer();
-    for (auto& sample : buffer.samples()) {
+  device->connect([&](audio_device&, audio_device_io<float>& io){
+    if (!io.input_buffer.has_value())
+     return;
+
+    auto& in = *io.input_buffer;
+
+    for (auto& sample : in.samples()) {
       float abs_value = std::abs(sample);
       if (abs_value > max_abs_value)
         max_abs_value.store(abs_value);
