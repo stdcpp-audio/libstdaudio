@@ -10,39 +10,43 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 template <typename _SampleType>
 class audio_buffer {
 public:
-  audio_buffer(_SampleType* data, size_t data_size, size_t num_channels)
+  using index_type = size_t;
+
+  // TODO: an audio_buffer should not be user-constructible
+  audio_buffer(_SampleType* data, index_type data_size, index_type num_channels)
     : _samples(data, data_size), _num_channels(num_channels) {
   }
 
-  size_t size_channels() const noexcept {
+  index_type size_channels() const noexcept {
     return _num_channels;
   }
 
-  size_t size_frames() const noexcept {
+  index_type size_frames() const noexcept {
     return size_samples() / size_channels();
   }
 
-  size_t size_samples() const noexcept {
+  index_type size_samples() const noexcept {
     return _samples.size();
   }
 
-  size_t size_bytes() const noexcept {
+  index_type size_bytes() const noexcept {
     return size_samples() * sizeof(_SampleType);
   }
 
+  // TODO: replace samples() with something that does not require the data to be contiguous in memory.
   span<_SampleType> samples() const noexcept {
     return _samples;
   }
 
-  _SampleType& operator()(size_t frame_index, size_t channel_index) {
-    const size_t index = (_num_channels * frame_index) + channel_index;
+  _SampleType& operator()(index_type frame_index, index_type channel_index) {
+    const index_type index = (_num_channels * frame_index) + channel_index;
     assert(index < _samples.size());
     return _samples[index];
   }
 
 private:
   span<_SampleType> _samples = {};
-  size_t _num_channels = 0;
+  index_type _num_channels = 0;
 };
 
 template <typename _SampleType>
