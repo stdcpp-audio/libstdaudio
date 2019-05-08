@@ -30,10 +30,13 @@ int main() {
 
     auto& in = *io.input_buffer;
 
-    for (auto& sample : in.samples()) {
-      float abs_value = std::abs(sample);
-      if (abs_value > max_abs_value)
-        max_abs_value.store(abs_value);
+    for (int frame = 0; frame < in.size_frames(); ++frame) {
+      for (int channel = 0; channel < in.size_channels(); ++channel) {
+        float abs_value = std::abs(in(frame, channel));
+
+        if (abs_value > max_abs_value)
+          max_abs_value.store(abs_value);
+      }
     }
   });
 

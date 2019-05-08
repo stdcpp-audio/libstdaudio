@@ -33,11 +33,6 @@ public:
     return size_samples() * sizeof(_SampleType);
   }
 
-  // TODO: replace samples() with something that does not require the data to be contiguous in memory.
-  span<_SampleType> samples() const noexcept {
-    return _samples;
-  }
-
   _SampleType& operator()(index_type frame_index, index_type channel_index) {
     const index_type index = (_num_channels * frame_index) + channel_index;
     assert(index < _samples.size());
