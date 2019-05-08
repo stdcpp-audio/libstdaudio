@@ -45,6 +45,4 @@ int main() {
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
     std::cout << gain_to_db(max_abs_value.exchange(0)) << " dB\n";
   }
-
-  device->stop();
 }
