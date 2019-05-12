@@ -10,7 +10,32 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 template <typename _SampleType>
 class audio_buffer {
 public:
+  using sample_type = _SampleType;
   using index_type = size_t;
+
+  sample_type& operator()(index_type frame_index, index_type channel_index) {
+    return _samples[_get_1d_index(frame_index, channel_index)];
+  }
+
+  const sample_type& operator()(index_type frame_index, index_type channel_index) const {
+    return _samples[_get_1d_index(frame_index, channel_index)];
+  }
+
+  sample_type* data() const noexcept {
+    return _samples.data();
+  }
+
+  constexpr bool is_contiguous() const noexcept {
+    return true;
+  }
+
+  constexpr bool channels_are_contiguous() const noexcept {
+    return false;
+  }
+
+  constexpr bool frames_are_contiguous() const noexcept {
+    return true;
+  }
 
   index_type size_channels() const noexcept {
     return _num_channels;
@@ -24,19 +49,15 @@ public:
     return _samples.size();
   }
 
-  index_type size_bytes() const noexcept {
-    return size_samples() * sizeof(_SampleType);
-  }
-
-  _SampleType& operator()(index_type frame_index, index_type channel_index) {
+private:
+  index_type _get_1d_index(index_type frame_index, index_type channel_index) const {
     const index_type index = (_num_channels * frame_index) + channel_index;
     assert(index < _samples.size());
-    return _samples[index];
+    return index;
   }
 
-private:
   friend class audio_device;
-  
+
   audio_buffer(_SampleType* data, index_type data_size, index_type num_channels)
       : _samples(data, data_size), _num_channels(num_channels) {
   }
