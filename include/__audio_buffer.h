@@ -12,11 +12,6 @@ class audio_buffer {
 public:
   using index_type = size_t;
 
-  // TODO: an audio_buffer should not be user-constructible
-  audio_buffer(_SampleType* data, index_type data_size, index_type num_channels)
-    : _samples(data, data_size), _num_channels(num_channels) {
-  }
-
   index_type size_channels() const noexcept {
     return _num_channels;
   }
@@ -40,6 +35,12 @@ public:
   }
 
 private:
+  friend class audio_device;
+  
+  audio_buffer(_SampleType* data, index_type data_size, index_type num_channels)
+      : _samples(data, data_size), _num_channels(num_channels) {
+  }
+
   span<_SampleType> _samples = {};
   index_type _num_channels = 0;
 };
