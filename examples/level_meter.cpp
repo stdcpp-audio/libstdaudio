@@ -24,7 +24,7 @@ int main() {
   if (!device)
     return 1;
 
-  device->connect([&](audio_device&, audio_device_io<float>& io){
+  device->connect([&](audio_device&, audio_device_io<float>& io) noexcept {
     if (!io.input_buffer.has_value())
      return;
 

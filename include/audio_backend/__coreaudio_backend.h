@@ -32,7 +32,7 @@ public:
     return false;
   }
 
-  template <typename T, typename =  enable_if<is_unsigned_v<T>>>
+  template <typename T, typename =  enable_if_t<is_unsigned_v<T>>>
   constexpr static T next_power_of_2(T n) noexcept {
     T count = 0;
     if (n && !(n & (n - 1)))
@@ -194,7 +194,7 @@ public:
 
   bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
     // TODO: for some reason, the call below succeeds even for nonsensical buffer sizes, so we need to catch this  manually:
-    if (std::find(_supported_buffer_sizes.begin(), _supported_buffer_sizes.end(), new_buffer_size) == _supported_buffer_sizes.end())
+    if (find(_supported_buffer_sizes.begin(), _supported_buffer_sizes.end(), new_buffer_size) == _supported_buffer_sizes.end())
       return false;
 
     AudioObjectPropertyAddress pa = {
@@ -220,7 +220,8 @@ public:
     return false;
   }
 
-  template <typename _CallbackType>
+  template <typename _CallbackType,
+            typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__coreaudio_native_sample_type >&>>>
   void connect(_CallbackType callback) {
     if (_running)
       throw audio_device_exception("cannot connect to running audio_device");
@@ -229,6 +230,13 @@ public:
   }
 
   bool start() {
+    static auto no_op  = [](audio_device&) noexcept {};
+    return start(no_op, no_op);
+  }
+
+  template <typename _StartCallbackType, typename _StopCallbackType,
+            typename = enable_if_t<is_nothrow_invocable_v<_StartCallbackType, audio_device&> && is_nothrow_invocable_v<_StopCallbackType, audio_device&>>>
+  bool start(_StartCallbackType&& start_callback, _StopCallbackType&& stop_callback) {
     if (!_running) {
       // TODO: ProcID is a resource; wrap it into an RAII guard
       if (!__coreaudio_util::check_error(AudioDeviceCreateIOProcID(
@@ -275,19 +283,13 @@ public:
     assert(false);
   }
 
-  template<class _Rep, class _Period>
-  void wait_for(std::chrono::duration<_Rep, _Period> rel_time) const {
-    assert(false);
-  }
-
-  template<class _Clock, class _Duration>
-  void wait_until(std::chrono::time_point<_Clock, _Duration> abs_time) const {
-    assert(false);
-  }
-
   template <typename _CallbackType>
   void process(_CallbackType&) {
     assert(false);
+  }
+
+  constexpr bool has_unprocessed_io() const noexcept {
+    return false;
   }
 
 private:

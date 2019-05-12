@@ -17,7 +17,7 @@ int main() {
   std::uniform_real_distribution<float> white_noise(-1.0f, 1.0f);
 
   if (auto device = get_default_audio_output_device()) {
-    device->connect([&](audio_device &, audio_device_io<float> &io) {
+    device->connect([&](audio_device &, audio_device_io<float> &io) noexcept {
       if (!io.output_buffer.has_value())
         return;
 

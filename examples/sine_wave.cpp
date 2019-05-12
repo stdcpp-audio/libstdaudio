@@ -20,7 +20,7 @@ int main() {
   float delta = 2.0f * frequency_hz * float(M_PI / device->get_sample_rate());
   float phase = 0;
 
-  device->connect([=](audio_device& device, audio_device_io<float>& io) mutable {
+  device->connect([=](audio_device& device, audio_device_io<float>& io) mutable noexcept {
     if (!io.output_buffer.has_value())
       return;
 
@@ -31,7 +31,7 @@ int main() {
       phase = std::fmod(phase + delta, 2.0f * M_PI);
 
       for (int channel = 0; channel < out.size_channels(); ++channel)
-        out(frame, channel) = next_sample;
+        out(frame, channel) = 0.2f * next_sample;
     }
   });
 

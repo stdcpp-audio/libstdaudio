@@ -97,19 +97,13 @@ public:
     assert(false);
   }
 
-  template<class _Rep, class _Period>
-  void wait_for(chrono::duration<_Rep, _Period> rel_time) const {
-    assert(false);
-  }
-
-  template<class _Clock, class _Duration>
-  void wait_until(chrono::time_point<_Clock, _Duration> abs_time) const {
-    assert(false);
-  }
-
   template <typename _CallbackType>
   void process(_CallbackType&) {
     assert(false);
+  }
+
+  constexpr bool has_unprocessed_io() const noexcept {
+    return false;
   }
 };
 
