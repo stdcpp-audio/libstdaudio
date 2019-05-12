@@ -306,23 +306,25 @@ private:
   }
 
   static OSStatus _device_callback(AudioObjectID device_id,
-                                   const AudioTimeStamp *,
-                                   const AudioBufferList *input_data,
-                                   const AudioTimeStamp *,
-                                   AudioBufferList *output_data,
-                                   const AudioTimeStamp *,
+                                   const AudioTimeStamp* /* now */,
+                                   const AudioBufferList* input_data,
+                                   const AudioTimeStamp* input_time,
+                                   AudioBufferList* output_data,
+                                   const AudioTimeStamp* output_time,
                                    void *void_ptr_to_this_device) {
     assert (void_ptr_to_this_device != nullptr);
     audio_device& this_device = *reinterpret_cast<audio_device*>(void_ptr_to_this_device);
 
-    _fill_buffers(input_data, output_data, this_device._current_buffers);
+    _fill_buffers(input_data, input_time, output_data, output_time, this_device._current_buffers);
 
     invoke(this_device._user_callback, this_device, this_device._current_buffers);
     return noErr;
   }
 
   static void _fill_buffers(const AudioBufferList* input_bl,
+                            const AudioTimeStamp* input_time,
                             const AudioBufferList* output_bl,
+                            const AudioTimeStamp* output_time,
                             audio_device_io<__coreaudio_native_sample_type>& buffers) {
     assert(input_bl != nullptr);
     assert(output_bl != nullptr);
@@ -333,11 +335,15 @@ private:
     const size_t num_output_buffers = output_bl->mNumberBuffers;
     assert(num_output_buffers == 0 || num_output_buffers == 1);
 
-    if (num_input_buffers == 1)
+    if (num_input_buffers == 1) {
       buffers.input_buffer = coreaudio_buffer_to_buffer(input_bl->mBuffers[0]);
+      buffers.input_time = coreaudio_timestamp_to_timepoint (input_time);
+    }
 
-    if (num_output_buffers == 1)
+    if (num_output_buffers == 1) {
       buffers.output_buffer = coreaudio_buffer_to_buffer(output_bl->mBuffers[0]);
+      buffers.output_time = coreaudio_timestamp_to_timepoint (output_time);
+    }
   }
 
   static audio_buffer<__coreaudio_native_sample_type> coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {
@@ -350,6 +356,10 @@ private:
     return {data_ptr, data_size, num_channels};
   }
 
+  static audio_clock_t::time_point coreaudio_timestamp_to_timepoint(const AudioTimeStamp* timestamp) {
+    auto count = static_cast<audio_clock_t::rep>(timestamp->mHostTime);
+    return audio_clock_t::time_point() + audio_clock_t::duration(count);
+  }
 
   void _init_supported_sample_rates() {
     AudioObjectPropertyAddress pa = {

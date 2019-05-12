@@ -5,7 +5,11 @@
 
 #pragma once
 
+#include <chrono>
+
 _LIBSTDAUDIO_NAMESPACE_BEGIN
+
+// TODO: the audio_buffer currently only supports contiguous-interleaved. Make this generic using Gasper Azman's implementation!
 
 template <typename _SampleType>
 class audio_buffer {
@@ -66,11 +70,16 @@ private:
   index_type _num_channels = 0;
 };
 
+// TODO: this is currently macOS specific!
+using audio_clock_t = chrono::steady_clock;
+
 template <typename _SampleType>
 struct audio_device_io
 {
   optional<audio_buffer<_SampleType>> input_buffer;
+  optional<chrono::time_point<audio_clock_t>> input_time;
   optional<audio_buffer<_SampleType>> output_buffer;
+  optional<chrono::time_point<audio_clock_t>> output_time;
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
