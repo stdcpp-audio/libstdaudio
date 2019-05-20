@@ -12,12 +12,15 @@
 #include <cassert>
 #include <forward_list>
 #include <vector>
+#include <functional>
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <atlbase.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
+
+using __asio_common_sample_type = float;
 
 struct audio_device_exception : public runtime_error {
   explicit audio_device_exception(const char* what)
@@ -97,7 +100,7 @@ public:
 
   template <typename _SampleType>
   constexpr bool supports_sample_type() const noexcept {
-    return false;
+    return is_same_v<_SampleType, __asio_common_sample_type>;
   }
 
   constexpr bool can_connect() const noexcept {
@@ -141,12 +144,13 @@ public:
     assert(false);
   }
 
-  template <typename _CallbackType>
-  void connect(_CallbackType) {
+  template <typename _CallbackType,
+            typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__asio_common_sample_type >&>> >
+  void connect(_CallbackType callback) {
     if (_running) {
       throw audio_device_exception("cannot connect to running audio_device");
     }
-    assert(false);
+    _user_callback = move(callback);
   }
 
 private:
@@ -220,6 +224,8 @@ private:
   bool _running = false;
 
   ASIOSampleType _sample_type;
+  using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_type>&)>;
+  __asio_callback_t _user_callback;
 };
 
 class audio_device_list : public forward_list<audio_device> {
