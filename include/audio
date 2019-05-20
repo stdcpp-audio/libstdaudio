@@ -21,6 +21,8 @@ using namespace TCB_SPAN_NAMESPACE_NAME;
 
 #ifdef __APPLE__
   #include <audio_backend/__coreaudio_backend.h>
+#elif defined _WIN32
+  #include <audio_backend/__windows_backend.h>
 #else
   #include <audio_backend/__null_backend.h>
 #endif // __APPLE__
