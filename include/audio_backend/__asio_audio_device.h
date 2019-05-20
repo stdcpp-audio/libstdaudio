@@ -54,18 +54,21 @@ public:
     return _num_outputs;
   }
 
-  using sample_rate_t = int;
+  using sample_rate_t = ASIOSampleRate;
 
   sample_rate_t get_sample_rate() const noexcept {
-    return {};
+    sample_rate_t sample_rate = 0;
+    _asio->getSampleRate(&sample_rate);
+    return sample_rate;
   }
 
   span<const sample_rate_t> get_supported_sample_rates() const noexcept {
-    return {};
+    return _sample_rates;
   }
 
-  bool set_sample_rate(sample_rate_t) {
-    return false;
+  bool set_sample_rate(sample_rate_t sample_rate) {
+    const auto result = _asio->setSampleRate(sample_rate);
+    return result == ASE_OK;
   }
 
   using buffer_size_t = int;
@@ -141,6 +144,21 @@ private:
       return;
     }
     _asio->getChannels(&_num_inputs, &_num_outputs);
+
+    initialise_sample_rates();
+  }
+
+  void initialise_sample_rates()
+  {
+    constexpr array<sample_rate_t, 6> common_sample_rates = { 44'100, 48'000, 88'200, 96'000, 176'400, 192'000 };
+    for (const auto sample_rate : common_sample_rates) {
+      if (ASE_OK == _asio->canSampleRate(sample_rate)) {
+        _sample_rates.push_back(sample_rate);
+      }
+    }
+    if (0 == get_sample_rate()) {
+      set_sample_rate(_sample_rates[0]);
+    }
   }
 
   CComPtr<IASIO> _asio;
@@ -148,6 +166,7 @@ private:
   device_id_t _id;
   long _num_inputs = 0;
   long _num_outputs = 0;
+  vector<sample_rate_t> _sample_rates;
 };
 
 class audio_device_list : public forward_list<audio_device> {
