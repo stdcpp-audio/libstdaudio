@@ -125,6 +125,7 @@ public:
   }
 
   bool stop() {
+    //TODO: fade out to prevent audio clicks on stop
     const auto result = _asio->stop();
     _running = false;
     _instance = nullptr;
@@ -251,16 +252,19 @@ private:
 
     _input_samples.resize(_num_inputs * _buffer_size);
     _output_samples.resize(_num_outputs * _buffer_size);
-    _io.input_buffer = { _input_samples.data(), _input_samples.size(), size_t(_num_inputs) };
-    _io.output_buffer = { _output_samples.data(), _output_samples.size(), size_t(_num_outputs) };
+    _io.input_buffer = {_input_samples.data(), _input_samples.size(), size_t(_num_inputs)};
+    _io.output_buffer = {_output_samples.data(), _output_samples.size(), size_t(_num_outputs)};
 
+    initialise_buffer_fillers();
+  }
+
+  void initialise_buffer_fillers() {
 
     switch (_sample_type)
     {
     case ASIOSTInt32LSB:
     {
       _fill_output_buffers = [&](long index) {
-
         auto& out = *_io.output_buffer;
         for (int frame = 0; frame < out.size_frames(); ++frame) {
           for (int channel = 0; channel < _num_outputs; ++channel) {
@@ -270,12 +274,26 @@ private:
           }
         }
       };
+
+      _fill_input_buffers = [&](long index) {
+        auto& in = *_io.input_buffer;
+        for (int frame = 0; frame < in.size_frames(); ++frame) {
+          for (int channel = 0; channel < _num_outputs; ++channel) {
+            const auto buffer = static_cast<int32_t*>(_asio_buffers[channel].buffers[index]);
+            const auto sample = static_cast<float>(buffer[frame]) / INT32_MAX;
+            in(frame, channel) = sample;
+          }
+        }
+      };
+
+      break;
     }
+    default: //TODO: Implement other sample types
+      throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
   }
 
   static void buffer_switch(long /*index*/, ASIOBool /*direct_process*/) {}
-
 
   static void sample_rate_changed(ASIOSampleRate /*sample_rate*/) {}
 
@@ -289,12 +307,13 @@ private:
     }
   }
 
-  static ASIOTime* buffer_switch_time_info (ASIOTime* params, long index, ASIOBool /*direct_process*/) {
-    return _instance->on_buffer_switch(params, index);
+  static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool /*direct_process*/) {
+    return _instance->on_buffer_switch(time, index);
   }
 
   ASIOTime* on_buffer_switch(ASIOTime* time, long index) {
 
+    _fill_input_buffers(index);
     _user_callback(*this, _io);
     _fill_output_buffers(index);
 
@@ -325,6 +344,7 @@ private:
   vector<float> _output_samples;
 
   using fill_buffers = function<void(long index)>;
+  fill_buffers _fill_input_buffers;
   fill_buffers _fill_output_buffers;
 
   vector<ASIOBufferInfo> _asio_buffers;
@@ -375,7 +395,7 @@ public:
 
   __reg_key_reader subkey(const string& name)
   {
-    return { _key, name};
+    return {_key, name};
   }
 
   string value(const char* name) const {
@@ -404,7 +424,11 @@ public:
   }
 
   optional<audio_device> default_input() {
-    return {};
+    auto devices = inputs();
+    if (devices.empty()) {
+      return {};
+    }
+    return *devices.begin();
   }
 
   optional<audio_device> default_output() {
