@@ -39,6 +39,11 @@ public:
     initialise_asio(class_id);
   }
 
+  ~audio_device() {
+    stop();
+    _asio->disposeBuffers();
+  }
+
   string_view name() const noexcept {
     return _name;
   }
@@ -112,13 +117,17 @@ public:
   }
 
   bool start() {
-    _running = true;
-    return false;
+    _instance = this;
+    const auto result = _asio->start();
+    _running = result == ASE_OK;
+    return _running;
   }
 
   bool stop() {
+    const auto result = _asio->stop();
     _running = false;
-    return false;
+    _instance = nullptr;
+    return result == ASE_OK;
   }
 
   bool is_running() const noexcept {
@@ -151,6 +160,20 @@ public:
       throw audio_device_exception("cannot connect to running audio_device");
     }
     _user_callback = move(callback);
+
+    for (int i = 0; i < _num_inputs; ++i) {
+      _asio_buffers.emplace_back(ASIOBufferInfo{true, i});
+    }
+    for (int i = 0; i < _num_outputs; ++i) {
+      _asio_buffers.emplace_back(ASIOBufferInfo{false, i});
+    }
+
+    const long num_channels = _num_inputs + _num_outputs;
+    const auto result = _asio->createBuffers(_asio_buffers.data(), num_channels, _buffer_size, &_asio_callbacks);
+
+    if (result != ASE_OK) {
+      throw audio_device_exception("failed to create ASIO buffers: " + result);
+    }
   }
 
 private:
@@ -163,8 +186,16 @@ private:
       return;
     }
 
+    initialise_callbacks();
     initialise_io();
     initialise_sample_rates();
+  }
+
+  void initialise_callbacks() {
+    _asio_callbacks.bufferSwitch = &audio_device::buffer_switch;
+    _asio_callbacks.bufferSwitchTimeInfo = &audio_device::buffer_switch_time_info;
+    _asio_callbacks.asioMessage = &audio_device::asio_message;
+    _asio_callbacks.sampleRateDidChange = &audio_device::sample_rate_changed;
   }
 
   void initialise_io() {
@@ -213,6 +244,29 @@ private:
     }
   }
 
+  static void buffer_switch(long /*index*/, ASIOBool /*direct_process*/) {}
+
+
+  static void sample_rate_changed(ASIOSampleRate /*sample_rate*/) {}
+
+  static long asio_message(long selector, long /*value*/, void* /*message*/, double* /*opt*/) {
+    switch (selector)
+    {
+    case kAsioSupportsTimeInfo: return ASIOTrue;
+    case kAsioEngineVersion: return 2;
+    case kAsioSelectorSupported: return ASIOFalse;
+    default: return false;
+    }
+  }
+
+  static ASIOTime* buffer_switch_time_info (ASIOTime* params, long index, ASIOBool /*direct_process*/) {
+    return _instance->on_buffer_switch(params, index);
+  }
+
+  static ASIOTime* on_buffer_switch(ASIOTime* /*params*/, long /*double_buffer_index*/) {
+    return nullptr;
+  }
+
   CComPtr<IASIO> _asio;
   const string _name;
   device_id_t _id;
@@ -226,7 +280,13 @@ private:
   ASIOSampleType _sample_type;
   using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_type>&)>;
   __asio_callback_t _user_callback;
+
+  vector< ASIOBufferInfo> _asio_buffers;
+  static audio_device* _instance;
+  ASIOCallbacks _asio_callbacks;
 };
+
+audio_device* audio_device::_instance = nullptr;
 
 class audio_device_list : public forward_list<audio_device> {
 };
@@ -302,7 +362,11 @@ public:
   }
 
   optional<audio_device> default_output() {
-    return {};
+    auto devices = outputs();
+    if (devices.empty()) {
+      return {};
+    }
+    return *devices.begin();
   }
 
   audio_device_list inputs() {
@@ -330,6 +394,10 @@ private:
 
     int index = 0;
     for (const auto& name : asio_reg.subkeys()) {
+
+      if (is_excluded(name)) {
+        continue;
+      }
       const auto key = asio_reg.subkey(name);
       const auto value = key.value("CLSID");
 
@@ -342,6 +410,14 @@ private:
       }
     }
     return devices;
+  }
+
+  bool is_excluded(string_view name)
+  {
+    if (name == "Realtek ASIO") {
+      return true;
+    }
+    return false;
   }
 };
 
