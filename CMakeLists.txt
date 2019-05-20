@@ -18,6 +18,10 @@ if (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "-framework CoreAudio")
 endif ()
 
+if (MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "winmm.lib")
+endif ()
+
 include_directories(include)
 
 add_executable(white_noise examples/white_noise.cpp)

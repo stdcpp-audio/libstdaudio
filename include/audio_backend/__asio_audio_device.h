@@ -109,7 +109,7 @@ public:
   }
 
   constexpr bool can_connect() const noexcept {
-    return false;
+    return true;
   }
 
   constexpr bool can_process() const noexcept {
@@ -118,6 +118,7 @@ public:
 
   bool start() {
     _instance = this;
+    _sample_position = 0;
     const auto result = _asio->start();
     _running = result == ASE_OK;
     return _running;
@@ -154,26 +155,14 @@ public:
   }
 
   template <typename _CallbackType,
-            typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__asio_common_sample_type >&>> >
+            typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>> >
   void connect(_CallbackType callback) {
     if (_running) {
       throw audio_device_exception("cannot connect to running audio_device");
     }
     _user_callback = move(callback);
 
-    for (int i = 0; i < _num_inputs; ++i) {
-      _asio_buffers.emplace_back(ASIOBufferInfo{true, i});
-    }
-    for (int i = 0; i < _num_outputs; ++i) {
-      _asio_buffers.emplace_back(ASIOBufferInfo{false, i});
-    }
-
-    const long num_channels = _num_inputs + _num_outputs;
-    const auto result = _asio->createBuffers(_asio_buffers.data(), num_channels, _buffer_size, &_asio_callbacks);
-
-    if (result != ASE_OK) {
-      throw audio_device_exception("failed to create ASIO buffers: " + result);
-    }
+    initialise_buffers();
   }
 
 private:
@@ -244,6 +233,28 @@ private:
     }
   }
 
+  void initialise_buffers() {
+
+    for (int i = 0; i < _num_inputs; ++i) {
+      _asio_buffers.emplace_back(ASIOBufferInfo{ true, i });
+    }
+    for (int i = 0; i < _num_outputs; ++i) {
+      _asio_buffers.emplace_back(ASIOBufferInfo{ false, i });
+    }
+
+    const long num_channels = _num_inputs + _num_outputs;
+    const auto result = _asio->createBuffers(_asio_buffers.data(), num_channels, _buffer_size, &_asio_callbacks);
+
+    if (result != ASE_OK) {
+      throw audio_device_exception("failed to create ASIO buffers: " + result);
+    }
+
+    _input_samples.resize(_num_inputs * _buffer_size);
+    _output_samples.resize(_num_outputs * _buffer_size);
+    _io.input_buffer = { _input_samples.data(), _input_samples.size(), size_t(_num_inputs) };
+    _io.output_buffer = { _output_samples.data(), _output_samples.size(), size_t(_num_outputs) };
+  }
+
   static void buffer_switch(long /*index*/, ASIOBool /*direct_process*/) {}
 
 
@@ -255,7 +266,7 @@ private:
     case kAsioSupportsTimeInfo: return ASIOTrue;
     case kAsioEngineVersion: return 2;
     case kAsioSelectorSupported: return ASIOFalse;
-    default: return false;
+    default: return ASIOFalse;
     }
   }
 
@@ -263,8 +274,13 @@ private:
     return _instance->on_buffer_switch(params, index);
   }
 
-  static ASIOTime* on_buffer_switch(ASIOTime* /*params*/, long /*double_buffer_index*/) {
-    return nullptr;
+  ASIOTime* on_buffer_switch(ASIOTime* time, long /*index*/) {
+
+    time->timeInfo.flags = kSystemTimeValid | kSamplePositionValid;
+    time->timeInfo.samplePosition = _sample_position;
+    _sample_position += _buffer_size;
+    time->timeInfo.systemTime = timeGetTime() * 1'000'000;
+    return time;
   }
 
   CComPtr<IASIO> _asio;
@@ -278,10 +294,16 @@ private:
   bool _running = false;
 
   ASIOSampleType _sample_type;
+  ASIOSamples _sample_position = 0;
+
   using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_type>&)>;
   __asio_callback_t _user_callback;
+  audio_device_io<__asio_common_sample_type> _io;
+  vector<float> _input_samples;
+  vector<float> _output_samples;
 
-  vector< ASIOBufferInfo> _asio_buffers;
+
+  vector<ASIOBufferInfo> _asio_buffers;
   static audio_device* _instance;
   ASIOCallbacks _asio_callbacks;
 };
@@ -329,7 +351,7 @@ public:
 
   __reg_key_reader subkey(const string& name)
   {
-    return {_key, name};
+    return { _key, name};
   }
 
   string value(const char* name) const {
@@ -399,14 +421,14 @@ private:
         continue;
       }
       const auto key = asio_reg.subkey(name);
-      const auto value = key.value("CLSID");
+      const auto clsid = key.value("CLSID");
 
       CLSID class_id;
-      CLSIDFromString(CComBSTR(value.c_str()), &class_id);
+      CLSIDFromString(CComBSTR(clsid.c_str()), &class_id);
 
       auto device = audio_device{index++, name, class_id};
       if (condition(device)) {
-        devices.emplace_front(move(device));
+        devices.push_front(move(device));
       }
     }
     return devices;
