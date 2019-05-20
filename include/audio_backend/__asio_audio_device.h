@@ -9,11 +9,15 @@
 #include <chrono>
 #include <cassert>
 #include <forward_list>
+#include <vector>
+
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // TODO: templatize audio_device as per 6.4 Device Selection API
-class audio_device {
+class audio_device final {
 public:
   audio_device() = delete;
 
@@ -124,6 +128,61 @@ public:
 class audio_device_list : public forward_list<audio_device> {
 };
 
+class __reg_key_reader final
+{
+public:
+  __reg_key_reader(HKEY key, const char* subkey) {
+    const auto result = RegOpenKeyExA(key, subkey, 0, KEY_READ, &_key);
+
+    if (ERROR_SUCCESS != result) {
+      throw runtime_error("Failed to read info from registry: 0x" + result);
+    }
+  }
+
+  ~__reg_key_reader() {
+    if (_key) {
+      RegCloseKey(_key);
+    }
+  }
+
+  vector<string> subkeys() const {
+    constexpr int max_asio_name_length{32};
+    char name[max_asio_name_length];
+    DWORD size{max_asio_name_length};
+    vector<string> keys;
+
+    for (DWORD index{0}; ; ++index) {
+      const auto result = RegEnumKeyEx(_key, index, name, &size, nullptr, nullptr, nullptr, nullptr);
+
+      if (result != ERROR_SUCCESS) {
+        break;
+      }
+
+      keys.emplace_back(name);
+    }
+
+    return keys;
+  }
+
+  __reg_key_reader subkey(const char* name)
+  {
+    return {_key, name};
+  }
+
+  string value(const char* name) const {
+    DWORD size{0};
+    RegQueryValueExA(_key, name, nullptr, nullptr, nullptr, &size);
+
+    string value(size + 1, 0);
+    RegQueryValueExA(_key, name, nullptr, nullptr, LPBYTE(value.data()), &size);
+
+    return value;
+  }
+
+private:
+  HKEY _key{0};
+};
+
 class __asio_devices {
 public:
   static __asio_devices& get() {
@@ -148,7 +207,22 @@ public:
   }
 
 private:
-  __asio_devices() = default;
+  __asio_devices()
+  {
+    enumerate();
+  }
+
+  void enumerate()
+  {
+    __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, "software\\asio");
+
+    for (const auto& name : asio_reg.subkeys()) {
+      auto key = asio_reg.subkey(name.c_str());
+      auto class_id = key.value("CLSID");
+      class_id = class_id;
+    }
+  }
+
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
