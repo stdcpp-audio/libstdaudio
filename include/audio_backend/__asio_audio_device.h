@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "iasiodrv.h"
+
 #include <string_view>
 #include <chrono>
 #include <cassert>
@@ -13,38 +15,43 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <atlbase.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
 // TODO: templatize audio_device as per 6.4 Device Selection API
 class audio_device final {
 public:
-  audio_device() = delete;
+  using device_id_t = int;
 
-  string_view name() const noexcept {
-    return {};
+  explicit audio_device(device_id_t id, string name, CLSID class_id)
+    : _name(name), _id(id)
+  {
+    initialise_asio(class_id);
   }
 
-  using device_id_t = unsigned;
+  string_view name() const noexcept {
+    return _name;
+  }
 
   device_id_t device_id() const noexcept {
-    return {};
+    return _id;
   }
 
   bool is_input() const noexcept {
-    return false;
+    return _num_inputs > 0;
   }
 
   bool is_output() const noexcept {
-    return false;
+    return _num_outputs > 0;
   }
 
   int get_num_input_channels() const noexcept {
-    return 0;
+    return _num_inputs;
   }
 
   int get_num_output_channels() const noexcept {
-    return 0;
+    return _num_outputs;
   }
 
   using sample_rate_t = int;
@@ -123,6 +130,24 @@ public:
   void connect(_CallbackType) {
     assert(false);
   }
+
+private:
+  void initialise_asio(CLSID class_id) {
+    const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&_asio));
+    if (result) {
+      throw runtime_error("Failed to open ASIO driver: 0x" + result);
+    }
+    if (!_asio->init(nullptr)) {
+      return;
+    }
+    _asio->getChannels(&_num_inputs, &_num_outputs);
+  }
+
+  CComPtr<IASIO> _asio;
+  const string _name;
+  device_id_t _id;
+  long _num_inputs = 0;
+  long _num_outputs = 0;
 };
 
 class audio_device_list : public forward_list<audio_device> {
@@ -131,8 +156,8 @@ class audio_device_list : public forward_list<audio_device> {
 class __reg_key_reader final
 {
 public:
-  __reg_key_reader(HKEY key, const char* subkey) {
-    const auto result = RegOpenKeyExA(key, subkey, 0, KEY_READ, &_key);
+  __reg_key_reader(HKEY key, const string& subkey) {
+    const auto result = RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key);
 
     if (ERROR_SUCCESS != result) {
       throw runtime_error("Failed to read info from registry: 0x" + result);
@@ -151,7 +176,7 @@ public:
     DWORD size{max_asio_name_length};
     vector<string> keys;
 
-    for (DWORD index{0}; ; ++index) {
+    for (DWORD index = 0; ; ++index) {
       const auto result = RegEnumKeyEx(_key, index, name, &size, nullptr, nullptr, nullptr, nullptr);
 
       if (result != ERROR_SUCCESS) {
@@ -164,7 +189,7 @@ public:
     return keys;
   }
 
-  __reg_key_reader subkey(const char* name)
+  __reg_key_reader subkey(const string& name)
   {
     return {_key, name};
   }
@@ -190,6 +215,10 @@ public:
     return instance;
   }
 
+  ~__asio_devices() {
+    CoUninitialize();
+  }
+
   optional<audio_device> default_input() {
     return {};
   }
@@ -199,30 +228,43 @@ public:
   }
 
   audio_device_list inputs() {
-    return {};
+    return enumerate([](const audio_device& device) {
+      return device.is_input();
+    });
   }
 
   audio_device_list outputs() {
-    return {};
+    return enumerate([](const audio_device& device) {
+      return device.is_output();
+    });
   }
 
 private:
-  __asio_devices()
-  {
-    enumerate();
+  __asio_devices() {
+    CoInitialize(nullptr);
   }
 
-  void enumerate()
-  {
+  template <typename Condition>
+  audio_device_list enumerate(Condition condition) {
+    audio_device_list devices;
+
     __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, "software\\asio");
 
+    int index = 0;
     for (const auto& name : asio_reg.subkeys()) {
-      auto key = asio_reg.subkey(name.c_str());
-      auto class_id = key.value("CLSID");
-      class_id = class_id;
-    }
-  }
+      const auto key = asio_reg.subkey(name);
+      const auto value = key.value("CLSID");
 
+      CLSID class_id;
+      CLSIDFromString(CComBSTR(value.c_str()), &class_id);
+
+      auto device = audio_device{index++, name, class_id};
+      if (condition(device)) {
+        devices.emplace_front(move(device));
+      }
+    }
+    return devices;
+  }
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
