@@ -189,6 +189,10 @@ private:
         _buffer_sizes.push_back(size);
       }
     }
+
+    ASIOChannelInfo info{0, _num_inputs > 0};
+    _asio->getChannelInfo(&info);
+    _sample_type = info.type;
   }
 
   void initialise_sample_rates()
@@ -214,6 +218,8 @@ private:
   vector<buffer_size_t> _buffer_sizes;
   buffer_size_t _buffer_size = 0;
   bool _running = false;
+
+  ASIOSampleType _sample_type;
 };
 
 class audio_device_list : public forward_list<audio_device> {
