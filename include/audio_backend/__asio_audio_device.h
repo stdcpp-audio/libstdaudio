@@ -12,6 +12,7 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
+// TODO: templatize audio_device as per 6.4 Device Selection API
 class audio_device {
 public:
   audio_device() = delete;
@@ -121,6 +122,33 @@ public:
 };
 
 class audio_device_list : public forward_list<audio_device> {
+};
+
+class __asio_devices {
+public:
+  static __asio_devices& get() {
+    static __asio_devices instance;
+    return instance;
+  }
+
+  optional<audio_device> default_input() {
+    return {};
+  }
+
+  optional<audio_device> default_output() {
+    return {};
+  }
+
+  audio_device_list inputs() {
+    return {};
+  }
+
+  audio_device_list outputs() {
+    return {};
+  }
+
+private:
+  __asio_devices() = default;
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
