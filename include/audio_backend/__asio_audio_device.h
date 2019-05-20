@@ -71,18 +71,22 @@ public:
     return result == ASE_OK;
   }
 
-  using buffer_size_t = int;
+  using buffer_size_t = long;
 
   buffer_size_t get_buffer_size_frames() const noexcept {
-    return {};
+    return _buffer_size;
   }
 
   span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
-    return {};
+    return _buffer_sizes;
   }
 
-  bool set_buffer_size_frames(buffer_size_t) {
-    return false;
+  bool set_buffer_size_frames(const buffer_size_t buffer_size) {
+    if (find(begin(_buffer_sizes), end(_buffer_sizes), buffer_size) == end(_buffer_sizes)) {
+      return false;
+    }
+    _buffer_size = buffer_size;
+    return true;
   }
 
   template <typename _SampleType>
@@ -143,14 +147,43 @@ private:
     if (!_asio->init(nullptr)) {
       return;
     }
-    _asio->getChannels(&_num_inputs, &_num_outputs);
 
+    initialise_io();
     initialise_sample_rates();
+  }
+
+  void initialise_io() {
+    const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
+
+    if (result != ASE_OK) {
+      return;
+    }
+
+    long min;
+    long max;
+    long granularity;
+    _asio->getBufferSize(&min, &max, &_buffer_size, &granularity);
+
+    if (granularity == -1) {
+      // Buffers are powers of two
+      for (long size = min; size < max; size *= 2) {
+        _buffer_sizes.push_back(size);
+      }
+    }
+    else if (granularity == 0) {
+      _buffer_sizes.push_back(_buffer_size);
+    }
+    else if (granularity > 0) {
+      for (long size = min; size <= max; size += granularity) {
+        _buffer_sizes.push_back(size);
+      }
+    }
   }
 
   void initialise_sample_rates()
   {
     constexpr array<sample_rate_t, 6> common_sample_rates = { 44'100, 48'000, 88'200, 96'000, 176'400, 192'000 };
+
     for (const auto sample_rate : common_sample_rates) {
       if (ASE_OK == _asio->canSampleRate(sample_rate)) {
         _sample_rates.push_back(sample_rate);
@@ -167,6 +200,8 @@ private:
   long _num_inputs = 0;
   long _num_outputs = 0;
   vector<sample_rate_t> _sample_rates;
+  vector<buffer_size_t> _buffer_sizes;
+  buffer_size_t _buffer_size = 0;
 };
 
 class audio_device_list : public forward_list<audio_device> {
