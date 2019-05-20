@@ -8,6 +8,7 @@
 #include <string_view>
 #include <chrono>
 #include <cassert>
+#include <forward_list>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -119,26 +120,7 @@ public:
   }
 };
 
-class audio_device_list
-{
-private:
-  class iterator {
-  public:
-    auto operator==(const iterator&) const noexcept { return true; }
-    auto operator!=(const iterator&) const noexcept { return false; }
-    auto operator++() -> const iterator& { assert(false); return *this; }
-    auto operator*() -> audio_device& {
-      assert(false); static audio_device device{};
-      return device;
-    }
-  };
-
-public:
-  auto begin() -> iterator { return {}; }
-  auto end() -> iterator { return {}; }
-  auto begin() const -> iterator { return {}; }
-  auto end() const -> iterator { return {}; }
-  auto empty() -> bool { return true; }
+class audio_device_list : public forward_list<audio_device> {
 };
 
 optional<audio_device> get_default_audio_input_device() {
