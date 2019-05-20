@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include <cassert>
+
 #include <chrono>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
@@ -56,7 +58,7 @@ public:
 private:
   index_type _get_1d_index(index_type frame_index, index_type channel_index) const {
     const index_type index = (_num_channels * frame_index) + channel_index;
-    assert(index < _samples.size());
+    assert(index < size_t(_samples.size()));
     return index;
   }
 
