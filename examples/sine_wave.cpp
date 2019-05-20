@@ -32,7 +32,7 @@ int main() {
 
     for (int frame = 0; frame < out.size_frames(); ++frame) {
       float next_sample = std::sin(phase);
-      phase = std::fmod(phase + delta, 2.0f * M_PI);
+      phase = std::fmod(phase + delta, 2.0f * float(M_PI));
 
       for (int channel = 0; channel < out.size_channels(); ++channel)
         out(frame, channel) = 0.2f * next_sample;
