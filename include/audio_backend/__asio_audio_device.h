@@ -253,6 +253,25 @@ private:
     _output_samples.resize(_num_outputs * _buffer_size);
     _io.input_buffer = { _input_samples.data(), _input_samples.size(), size_t(_num_inputs) };
     _io.output_buffer = { _output_samples.data(), _output_samples.size(), size_t(_num_outputs) };
+
+
+    switch (_sample_type)
+    {
+    case ASIOSTInt32LSB:
+    {
+      _fill_output_buffers = [&](long index) {
+
+        auto& out = *_io.output_buffer;
+        for (int frame = 0; frame < out.size_frames(); ++frame) {
+          for (int channel = 0; channel < _num_outputs; ++channel) {
+            const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+            const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
+            buffer[frame] = sample;
+          }
+        }
+      };
+    }
+    }
   }
 
   static void buffer_switch(long /*index*/, ASIOBool /*direct_process*/) {}
@@ -274,7 +293,10 @@ private:
     return _instance->on_buffer_switch(params, index);
   }
 
-  ASIOTime* on_buffer_switch(ASIOTime* time, long /*index*/) {
+  ASIOTime* on_buffer_switch(ASIOTime* time, long index) {
+
+    _user_callback(*this, _io);
+    _fill_output_buffers(index);
 
     time->timeInfo.flags = kSystemTimeValid | kSamplePositionValid;
     time->timeInfo.samplePosition = _sample_position;
@@ -296,12 +318,14 @@ private:
   ASIOSampleType _sample_type;
   ASIOSamples _sample_position = 0;
 
-  using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_type>&)>;
+  using __asio_callback_t = function<void(audio_device&, audio_device_io<float>&)>;
   __asio_callback_t _user_callback;
   audio_device_io<__asio_common_sample_type> _io;
   vector<float> _input_samples;
   vector<float> _output_samples;
 
+  using fill_buffers = function<void(long index)>;
+  fill_buffers _fill_output_buffers;
 
   vector<ASIOBufferInfo> _asio_buffers;
   static audio_device* _instance;
