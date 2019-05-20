@@ -19,6 +19,12 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
+struct audio_device_exception : public runtime_error {
+  explicit audio_device_exception(const char* what)
+    : runtime_error(what) {
+  }
+};
+
 // TODO: templatize audio_device as per 6.4 Device Selection API
 class audio_device final {
 public:
@@ -103,15 +109,17 @@ public:
   }
 
   bool start() {
+    _running = true;
     return false;
   }
 
   bool stop() {
+    _running = false;
     return false;
   }
 
   bool is_running() const noexcept {
-    return false;
+    return _running;
   }
 
   void wait() const {
@@ -135,6 +143,9 @@ public:
 
   template <typename _CallbackType>
   void connect(_CallbackType) {
+    if (_running) {
+      throw audio_device_exception("cannot connect to running audio_device");
+    }
     assert(false);
   }
 
@@ -142,7 +153,7 @@ private:
   void initialise_asio(CLSID class_id) {
     const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&_asio));
     if (result) {
-      throw runtime_error("Failed to open ASIO driver: 0x" + result);
+      throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
     }
     if (!_asio->init(nullptr)) {
       return;
@@ -202,6 +213,7 @@ private:
   vector<sample_rate_t> _sample_rates;
   vector<buffer_size_t> _buffer_sizes;
   buffer_size_t _buffer_size = 0;
+  bool _running = false;
 };
 
 class audio_device_list : public forward_list<audio_device> {
