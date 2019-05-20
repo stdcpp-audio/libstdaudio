@@ -32,7 +32,7 @@ int main() {
 
     for (int frame = 0; frame < in.size_frames(); ++frame) {
       for (int channel = 0; channel < in.size_channels(); ++channel) {
-        float abs_value = std::abs(in(frame, channel));
+        const float abs_value = std::abs(in(frame, channel));
 
         if (abs_value > max_abs_value)
           max_abs_value.store(abs_value);

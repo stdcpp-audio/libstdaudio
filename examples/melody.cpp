@@ -47,7 +47,7 @@ struct synthesiser {
       }
     }
 
-    auto next_sample = std::copysign(0.1f, std::sin(_phase));
+    const auto next_sample = std::copysign(0.1f, std::sin(_phase));
     _phase = std::fmod(_phase + _delta, 2.0f * float(M_PI));
     return next_sample;
   }
@@ -59,7 +59,7 @@ struct synthesiser {
 
 private:
   void update() noexcept {
-    float frequency_hz = note_to_frequency_hz(notes.at(_current_note_index));
+    const float frequency_hz = note_to_frequency_hz(notes.at(_current_note_index));
     _delta = 2.0f * frequency_hz * static_cast<float>(M_PI / _sample_rate);
   }
 

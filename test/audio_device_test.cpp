@@ -50,7 +50,7 @@ TEST_CASE("All output devices have unique IDs")
 
 TEST_CASE("If there are any input devices, there must be a default input device")
 {
-  auto default_device = get_default_audio_input_device();
+  const auto default_device = get_default_audio_input_device();
   auto devices = get_audio_input_device_list();
   if (devices.empty()) {
     CHECK_FALSE(default_device.has_value());
@@ -62,7 +62,7 @@ TEST_CASE("If there are any input devices, there must be a default input device"
 
 TEST_CASE("If there are any output devices, there must be a default output device")
 {
-  auto default_device = get_default_audio_output_device();
+  const auto default_device = get_default_audio_output_device();
   auto devices = get_audio_output_device_list();
   if (devices.empty()) {
     CHECK_FALSE(default_device.has_value());
