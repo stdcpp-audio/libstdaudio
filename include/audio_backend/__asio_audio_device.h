@@ -28,15 +28,17 @@ struct audio_device_exception : public runtime_error {
   }
 };
 
+enum class audio_direction {in, out, full_duplex};
+
 // TODO: templatize audio_device as per 6.4 Device Selection API
 class audio_device final {
 public:
   using device_id_t = int;
 
-  explicit audio_device(device_id_t id, string name, CLSID class_id)
+  explicit audio_device(device_id_t id, string name, CLSID class_id, audio_direction direction)
     : _name(name), _id(id)
   {
-    initialise_asio(class_id);
+    initialise_asio(class_id, direction);
   }
 
   ~audio_device() {
@@ -167,7 +169,7 @@ public:
   }
 
 private:
-  void initialise_asio(CLSID class_id) {
+  void initialise_asio(const CLSID class_id, const audio_direction direction) {
     const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&_asio));
     if (result) {
       throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
@@ -177,7 +179,7 @@ private:
     }
 
     initialise_callbacks();
-    initialise_io();
+    initialise_io(direction);
     initialise_sample_rates();
   }
 
@@ -188,11 +190,16 @@ private:
     _asio_callbacks.sampleRateDidChange = &audio_device::sample_rate_changed;
   }
 
-  void initialise_io() {
+  void initialise_io(const audio_direction direction) {
     const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
 
     if (result != ASE_OK) {
       return;
+    }
+
+    switch (direction) {
+    case audio_direction::in: _num_outputs = 0; break;
+    case audio_direction::out: _num_inputs = 0; break;
     }
 
     long min;
@@ -255,26 +262,21 @@ private:
     _io.input_buffer = {_input_samples.data(), _input_samples.size(), size_t(_num_inputs)};
     _io.output_buffer = {_output_samples.data(), _output_samples.size(), size_t(_num_outputs)};
 
-    initialise_buffer_fillers();
+    initialise_input_buffer_fillers();
+    initialise_output_buffer_fillers();
   }
 
-  void initialise_buffer_fillers() {
+  void initialise_input_buffer_fillers() {
+
+    if (!is_input()) {
+      _fill_input_buffers = [](long) {};
+      return;
+    }
 
     switch (_sample_type)
     {
     case ASIOSTInt32LSB:
     {
-      _fill_output_buffers = [&](long index) {
-        auto& out = *_io.output_buffer;
-        for (int frame = 0; frame < out.size_frames(); ++frame) {
-          for (int channel = 0; channel < _num_outputs; ++channel) {
-            const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-            const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
-            buffer[frame] = sample;
-          }
-        }
-      };
-
       _fill_input_buffers = [&](long index) {
         auto& in = *_io.input_buffer;
         for (int frame = 0; frame < in.size_frames(); ++frame) {
@@ -285,7 +287,34 @@ private:
           }
         }
       };
+      break;
+    }
+    default: //TODO: Implement other sample types
+      throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+    }
+  }
 
+  void initialise_output_buffer_fillers() {
+
+    if (!is_output()) {
+      _fill_output_buffers = [](long) {};
+      return;
+    }
+
+    switch (_sample_type)
+    {
+    case ASIOSTInt32LSB:
+    {
+        _fill_output_buffers = [&](long index) {
+          auto& out = *_io.output_buffer;
+          for (int frame = 0; frame < out.size_frames(); ++frame) {
+            for (int channel = 0; channel < _num_outputs; ++channel) {
+              const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+              const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
+              buffer[frame] = sample;
+            }
+          }
+        };
       break;
     }
     default: //TODO: Implement other sample types
@@ -432,15 +461,11 @@ public:
   }
 
   audio_device_list inputs() {
-    return enumerate([](const audio_device& device) {
-      return device.is_input();
-    });
+    return enumerate(audio_direction::in);
   }
 
   audio_device_list outputs() {
-    return enumerate([](const audio_device& device) {
-      return device.is_output();
-    });
+    return enumerate(audio_direction::out);
   }
 
 private:
@@ -448,8 +473,7 @@ private:
     CoInitialize(nullptr);
   }
 
-  template <typename Condition>
-  audio_device_list enumerate(Condition condition) {
+  audio_device_list enumerate(audio_direction direction) {
     audio_device_list devices;
 
     __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, "software\\asio");
@@ -466,12 +490,21 @@ private:
       CLSID class_id;
       CLSIDFromString(CComBSTR(clsid.c_str()), &class_id);
 
-      auto device = audio_device{index++, name, class_id};
-      if (condition(device)) {
+      auto device = audio_device{index++, name, class_id, direction};
+      if (is_required(device, direction)) {
         devices.push_front(move(device));
       }
     }
     return devices;
+  }
+
+  static bool is_required(const audio_device& device, const audio_direction direction) {
+    switch (direction) {
+    case audio_direction::in: return device.is_input();
+    case audio_direction::out: return device.is_output();
+    case audio_direction::full_duplex: return device.is_input() && device.is_output();
+    default: return false;
+    };
   }
 
   bool is_excluded(string_view name)
