@@ -279,9 +279,9 @@ private:
     {
       _fill_input_buffers = [&](long index) {
         auto& in = *_io.input_buffer;
-        for (int frame = 0; frame < in.size_frames(); ++frame) {
-          for (int channel = 0; channel < _num_inputs; ++channel) {
-            const auto buffer = static_cast<int32_t*>(_asio_buffers[channel].buffers[index]);
+        for (int channel = 0; channel < _num_inputs; ++channel) {
+          const auto buffer = static_cast<int32_t*>(_asio_buffers[channel].buffers[index]);
+          for (int frame = 0; frame < in.size_frames(); ++frame) {
             const auto sample = static_cast<float>(buffer[frame]) / INT32_MAX;
             in(frame, channel) = sample;
           }
@@ -307,9 +307,9 @@ private:
     {
         _fill_output_buffers = [&](long index) {
           auto& out = *_io.output_buffer;
-          for (int frame = 0; frame < out.size_frames(); ++frame) {
-            for (int channel = 0; channel < _num_outputs; ++channel) {
-              const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+          for (int channel = 0; channel < _num_outputs; ++channel) {
+            const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+            for (int frame = 0; frame < out.size_frames(); ++frame) {
               const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
               buffer[frame] = sample;
             }
