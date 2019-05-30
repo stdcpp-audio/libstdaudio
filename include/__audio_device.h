@@ -10,10 +10,10 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 class audio_device;
 class audio_device_list;
 
-optional<audio_device> get_default_audio_input_device();
-optional<audio_device> get_default_audio_output_device();
+inline optional<audio_device> get_default_audio_input_device();
+inline optional<audio_device> get_default_audio_output_device();
 
-audio_device_list get_audio_input_device_list();
-audio_device_list get_audio_output_device_list();
+inline audio_device_list get_audio_input_device_list();
+inline audio_device_list get_audio_output_device_list();
 
 _LIBSTDAUDIO_NAMESPACE_END
