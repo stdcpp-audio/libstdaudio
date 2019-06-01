@@ -229,14 +229,15 @@ public:
     _user_callback = move(callback);
   }
 
-  bool start() {
-    static auto no_op  = [](audio_device&) noexcept {};
-    return start(no_op, no_op);
-  }
+  // TODO: remove std::function as soon as C++20 default-ctable lambda and lambda in unevaluated contexts become available
+  using no_op_t = std::function<void(audio_device&)>;
 
-  template <typename _StartCallbackType, typename _StopCallbackType,
-            typename = enable_if_t<is_nothrow_invocable_v<_StartCallbackType, audio_device&> && is_nothrow_invocable_v<_StopCallbackType, audio_device&>>>
-  bool start(_StartCallbackType&& start_callback, _StopCallbackType&& stop_callback) {
+  template <typename _StartCallbackType = no_op_t,
+            typename _StopCallbackType = no_op_t,
+            // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
+            typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+  bool start(_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
+             _StopCallbackType&& stop_callback = [](audio_device&) noexcept {}) {
     if (!_running) {
       // TODO: ProcID is a resource; wrap it into an RAII guard
       if (!__coreaudio_util::check_error(AudioDeviceCreateIOProcID(
