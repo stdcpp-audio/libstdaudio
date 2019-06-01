@@ -351,11 +351,11 @@ private:
   static audio_buffer<__coreaudio_native_sample_type> coreaudio_buffer_to_buffer(const AudioBuffer& ca_buffer) {
     // TODO: allow different sample types here! It will possibly be int16_t instead of float on iOS!
 
-    const size_t num_channels = ca_buffer.mNumberChannels;
     auto* data_ptr = reinterpret_cast<__coreaudio_native_sample_type*>(ca_buffer.mData);
-    const size_t data_size = ca_buffer.mDataByteSize / sizeof(__coreaudio_native_sample_type);
+    const size_t num_channels = ca_buffer.mNumberChannels;
+    const size_t num_frames = ca_buffer.mDataByteSize / sizeof(__coreaudio_native_sample_type) / num_channels;
 
-    return {data_ptr, data_size, num_channels};
+    return {data_ptr, num_frames, num_channels, contiguous_interleaved};
   }
 
   static audio_clock_t::time_point coreaudio_timestamp_to_timepoint(const AudioTimeStamp* timestamp) {

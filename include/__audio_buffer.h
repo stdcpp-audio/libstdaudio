@@ -9,7 +9,14 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-// TODO: the audio_buffer currently only supports contiguous-interleaved. Make this generic using Gasper Azman's implementation!
+struct contiguous_interleaved_t{};
+inline constexpr contiguous_interleaved_t contiguous_interleaved;
+
+struct contiguous_deinterleaved_t{};
+inline constexpr contiguous_deinterleaved_t contiguous_deinterleaved;
+
+struct ptr_to_ptr_deinterleaved_t{};
+inline constexpr ptr_to_ptr_deinterleaved_t ptr_to_ptr_deinterleaved;
 
 template <typename _SampleType>
 class audio_buffer {
@@ -17,57 +24,80 @@ public:
   using sample_type = _SampleType;
   using index_type = size_t;
 
-  sample_type& operator()(index_type frame_index, index_type channel_index) {
-    return _samples[_get_1d_index(frame_index, channel_index)];
+  audio_buffer(sample_type* data, index_type num_frames, index_type num_channels, contiguous_interleaved_t)
+    : _num_frames(num_frames),
+      _num_channels(num_channels),
+      _stride(_num_channels),
+      _is_contiguous(true) {
+    assert (num_channels <= _max_num_channels);
+    for (auto i = 0; i < _num_channels; ++i) {
+      _channels[i] = data + i;
+    }
   }
 
-  const sample_type& operator()(index_type frame_index, index_type channel_index) const {
-    return _samples[_get_1d_index(frame_index, channel_index)];
+  audio_buffer(sample_type* data,  index_type num_frames, index_type num_channels, contiguous_deinterleaved_t)
+      : _num_frames(num_frames),
+        _num_channels(num_channels),
+        _stride(1),
+        _is_contiguous(true) {
+    assert (num_channels <= _max_num_channels);
+    for (auto i = 0; i < _num_channels; ++i) {
+      _channels[i] = data + (i * _num_frames);
+    }
+  }
+
+  audio_buffer(sample_type** data, index_type num_frames, index_type num_channels,ptr_to_ptr_deinterleaved_t)
+      : _num_frames(num_frames),
+        _num_channels(num_channels),
+        _stride(1),
+        _is_contiguous(false) {
+    assert (num_channels <= _max_num_channels);
+    copy (data, data + _num_channels, _channels.begin());
   }
 
   sample_type* data() const noexcept {
-    return _samples.data();
+    return _is_contiguous ? _channels[0] : nullptr;
   }
 
-  constexpr bool is_contiguous() const noexcept {
-    return true;
+  bool is_contiguous() const noexcept {
+    return _is_contiguous;
   }
 
-  constexpr bool channels_are_contiguous() const noexcept {
-    return false;
+  bool frames_are_contiguous() const noexcept {
+    return _stride == _num_channels;
   }
 
-  constexpr bool frames_are_contiguous() const noexcept {
-    return true;
+  bool channels_are_contiguous() const noexcept {
+    return _stride == 1;
+  }
+
+  index_type size_frames() const noexcept {
+    return _num_frames;
   }
 
   index_type size_channels() const noexcept {
     return _num_channels;
   }
 
-  index_type size_frames() const noexcept {
-    return size_samples() / size_channels();
+  index_type size_samples() const noexcept {
+    return _num_channels * _num_frames;
   }
 
-  index_type size_samples() const noexcept {
-    return _samples.size();
+  sample_type& operator()(index_type frame, index_type channel) noexcept {
+    return const_cast<sample_type&>(as_const(*this).operator()(frame, channel));
+  }
+
+  const sample_type& operator()(index_type frame, index_type channel) const noexcept {
+    return _channels[channel][frame * _stride];
   }
 
 private:
-  index_type _get_1d_index(index_type frame_index, index_type channel_index) const {
-    const index_type index = (_num_channels * frame_index) + channel_index;
-    assert(index < _samples.size());
-    return index;
-  }
-
-  friend class audio_device;
-
-  audio_buffer(_SampleType* data, index_type data_size, index_type num_channels)
-      : _samples(data, data_size), _num_channels(num_channels) {
-  }
-
-  span<_SampleType> _samples = {};
+  bool _is_contiguous = false;
+  index_type _num_frames = 0;
   index_type _num_channels = 0;
+  index_type _stride = 0;
+  constexpr static size_t _max_num_channels = 16;
+  std::array<sample_type*, _max_num_channels> _channels = {};
 };
 
 // TODO: this is currently macOS specific!
