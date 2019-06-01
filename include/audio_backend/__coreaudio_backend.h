@@ -595,4 +595,9 @@ audio_device_list get_audio_output_device_list() {
   return audio_device_enumerator::get_instance().get_output_device_list();
 }
 
+template <typename F, typename /* = enable_if_t<std::is_nothrow_invocable_v<F>> */ >
+void set_audio_device_list_callback(F&& cb) {
+  // TODO: implement!
+}
+
 _LIBSTDAUDIO_NAMESPACE_END

@@ -16,4 +16,7 @@ inline optional<audio_device> get_default_audio_output_device();
 inline audio_device_list get_audio_input_device_list();
 inline audio_device_list get_audio_output_device_list();
 
+template <typename F, typename = enable_if_t<std::is_invocable_v<F>>>
+void set_audio_device_list_callback(F&& cb);
+
 _LIBSTDAUDIO_NAMESPACE_END

@@ -529,3 +529,9 @@ TEST_CASE("Stopping an output device that is not running must succeed")
     CHECK (device.stop());
   }
 }
+
+TEST_CASE("Register device list change callback")
+{
+  auto cb = []{};
+  set_audio_device_list_callback(cb);
+}
