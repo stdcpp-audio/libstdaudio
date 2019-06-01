@@ -6,6 +6,7 @@
 #include <cmath>
 #include <thread>
 #include <audio>
+#include <cmath>
 
 // This example app plays a sine wave of a given frequency for 5 seconds.
 

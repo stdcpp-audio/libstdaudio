@@ -7,6 +7,7 @@
 
 #include <string_view>
 #include <chrono>
+#include <cassert>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -56,7 +57,7 @@ public:
     return {};
   }
 
-  bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
+  bool set_buffer_size_frames([[maybe_unused]] buffer_size_t new_buffer_size) {
     return false;
   }
 
@@ -116,7 +117,9 @@ private:
 public:
   auto begin() -> iterator { return {}; }
   auto end() -> iterator { return {}; }
-  auto empty() -> bool { return true; }
+  auto begin() const -> iterator { return {}; }
+  auto end() const -> iterator { return {}; }
+  auto empty() const -> bool { return true; }
 };
 
 optional<audio_device> get_default_audio_input_device() {
