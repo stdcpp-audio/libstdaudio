@@ -294,7 +294,7 @@ public:
   }
 
 private:
-  friend class audio_device_enumerator;
+  friend class __audio_device_enumerator;
 
   audio_device(device_id_t device_id, string name, __coreaudio_stream_config config)
   : _device_id(device_id),
@@ -439,10 +439,10 @@ private:
 class audio_device_list : public forward_list<audio_device> {
 };
 
-class audio_device_enumerator {
+class __audio_device_enumerator {
 public:
-  static audio_device_enumerator& get_instance() {
-    static audio_device_enumerator cde;
+  static __audio_device_enumerator& get_instance() {
+    static __audio_device_enumerator cde;
     return cde;
   }
 
@@ -490,7 +490,7 @@ public:
   }
 
 private:
-  audio_device_enumerator() = default;
+  __audio_device_enumerator() = default;
 
   static vector<AudioDeviceID> get_device_ids() {
     AudioObjectPropertyAddress pa = {
@@ -579,21 +579,21 @@ private:
 };
 
 optional<audio_device> get_default_audio_input_device() {
-  return audio_device_enumerator::get_instance().get_default_io_device(
+  return __audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultInputDevice);
 }
 
 optional<audio_device> get_default_audio_output_device() {
-  return audio_device_enumerator::get_instance().get_default_io_device(
+  return __audio_device_enumerator::get_instance().get_default_io_device(
     kAudioHardwarePropertyDefaultOutputDevice);
 }
 
 audio_device_list get_audio_input_device_list() {
-  return audio_device_enumerator::get_instance().get_input_device_list();
+  return __audio_device_enumerator::get_instance().get_input_device_list();
 }
 
 audio_device_list get_audio_output_device_list() {
-  return audio_device_enumerator::get_instance().get_output_device_list();
+  return __audio_device_enumerator::get_instance().get_output_device_list();
 }
 
 template <typename F, typename /* = enable_if_t<std::is_nothrow_invocable_v<F>> */ >
