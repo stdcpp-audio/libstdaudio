@@ -422,8 +422,7 @@ public:
     return keys;
   }
 
-  __reg_key_reader subkey(const string& name)
-  {
+  __reg_key_reader subkey(const string& name) const {
     return {_key, name};
   }
 
@@ -452,7 +451,7 @@ public:
     CoUninitialize();
   }
 
-  optional<audio_device> default_input() {
+  optional<audio_device> default_input() const {
     auto devices = inputs();
     if (devices.empty()) {
       return {};
@@ -460,7 +459,7 @@ public:
     return *devices.begin();
   }
 
-  optional<audio_device> default_output() {
+  optional<audio_device> default_output() const {
     auto devices = outputs();
     if (devices.empty()) {
       return {};
@@ -468,11 +467,11 @@ public:
     return *devices.begin();
   }
 
-  audio_device_list inputs() {
+  audio_device_list inputs() const {
     return enumerate(audio_direction::in);
   }
 
-  audio_device_list outputs() {
+  audio_device_list outputs() const {
     return enumerate(audio_direction::out);
   }
 
@@ -481,7 +480,7 @@ private:
     CoInitialize(nullptr);
   }
 
-  audio_device_list enumerate(audio_direction direction) {
+  audio_device_list enumerate(audio_direction direction) const {
     audio_device_list devices;
 
     __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, "software\\asio");
@@ -515,8 +514,7 @@ private:
     };
   }
 
-  bool is_excluded(string_view name)
-  {
+  bool is_excluded(string_view name) const {
     if (name == "Realtek ASIO") {
       return true;
     }
