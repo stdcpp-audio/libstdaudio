@@ -142,7 +142,7 @@ public:
   }
 
   bool start() {
-    _instance = this;
+    instance(this);
     _sample_position = 0;
     const auto result = _asio->start();
     _running = result == ASE_OK;
@@ -153,7 +153,6 @@ public:
     //TODO: fade out to prevent audio clicks on stop
     const auto result = _asio->stop();
     _running = false;
-    _instance = nullptr;
     return result == ASE_OK;
   }
 
@@ -360,7 +359,7 @@ private:
   }
 
   static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool) {
-    return _instance->on_buffer_switch(time, index);
+    return instance()->on_buffer_switch(time, index);
   }
 
   ASIOTime* on_buffer_switch(ASIOTime* time, long index) {
@@ -400,11 +399,13 @@ private:
   fill_buffers _fill_output_buffers;
 
   vector<ASIOBufferInfo> _asio_buffers;
-  static audio_device* _instance;
   ASIOCallbacks _asio_callbacks;
-};
 
-audio_device* audio_device::_instance = nullptr;
+  static audio_device* instance(audio_device* d = nullptr) {
+    static audio_device* device = d;
+    return device;
+  }
+};
 
 class audio_device_list : public forward_list<audio_device> {
 };
