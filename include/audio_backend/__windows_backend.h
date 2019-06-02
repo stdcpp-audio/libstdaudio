@@ -31,4 +31,9 @@ audio_device_list get_audio_output_device_list() {
   return devices.outputs();
 }
 
+template <typename F, typename /* = enable_if_t<std::is_nothrow_invocable_v<F>> */ >
+void set_audio_device_list_callback(F&&) {
+  // TODO: implement!
+}
+
 _LIBSTDAUDIO_NAMESPACE_END
