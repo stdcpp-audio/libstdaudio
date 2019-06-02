@@ -26,7 +26,7 @@ constexpr float bpm = 260.0;
 
 float note_to_frequency_hz(int note) {
   constexpr float pitch_standard_hz = 440.0f;
-  return pitch_standard_hz * std::pow(2.0f, float(note - 69) / 12.0f);
+  return pitch_standard_hz * std::pow(2.0f, static_cast<float>(note - 69) / 12.0f);
 }
 
 std::atomic<bool> stop = false;
@@ -48,7 +48,7 @@ struct synthesiser {
     }
 
     const auto next_sample = std::copysign(0.1f, std::sin(_phase));
-    _phase = std::fmod(_phase + _delta, 2.0f * float(M_PI));
+    _phase = std::fmod(_phase + _delta, 2.0f * static_cast<float>(M_PI));
     return next_sample;
   }
 
@@ -80,7 +80,7 @@ int main() {
     return 1;
 
   auto synth = synthesiser();
-  synth.set_sample_rate(float(device->get_sample_rate()));
+  synth.set_sample_rate(static_cast<float>(device->get_sample_rate()));
 
   device->connect([=](audio_device&, audio_device_io<float>& io) mutable noexcept {
     if (!io.output_buffer.has_value())

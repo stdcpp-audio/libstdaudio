@@ -259,8 +259,8 @@ private:
 
     _input_samples.resize(_num_inputs * _buffer_size);
     _output_samples.resize(_num_outputs * _buffer_size);
-    _io.input_buffer = {_input_samples.data(), _input_samples.size(), size_t(_num_inputs)};
-    _io.output_buffer = {_output_samples.data(), _output_samples.size(), size_t(_num_outputs)};
+    _io.input_buffer = {_input_samples.data(), _input_samples.size(), static_cast<size_t>(_num_inputs)};
+    _io.output_buffer = {_output_samples.data(), _output_samples.size(), static_cast<size_t>(_num_outputs)};
 
     initialise_input_buffer_fillers();
     initialise_output_buffer_fillers();
