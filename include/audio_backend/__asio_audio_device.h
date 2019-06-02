@@ -44,7 +44,9 @@ public:
 
   ~audio_device() {
     stop();
-    _asio->disposeBuffers();
+    if (!_asio_buffers.empty()) {
+      _asio->disposeBuffers();
+    }
   }
 
   string_view name() const noexcept {
@@ -346,12 +348,28 @@ private:
       };
       break;
     }
+
+    case ASIOSTInt24LSB:
+    {
+      _write = [&](long index) {
+        auto& out = *_io.output_buffer;
+        for (int channel = 0; channel < _num_outputs; ++channel) {
+          const auto buffer = static_cast<int8_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+          int byte_offset = 0;
+          for (int frame = 0; frame < out.size_frames(); ++frame) {
+            const auto sample = static_cast<int32_t>(0x7f'ffff * out(frame, channel));
+            buffer[byte_offset++] = 0xff & sample;
+            buffer[byte_offset++] = 0xff & (sample >> 8);
+            buffer[byte_offset++] = 0xff & (sample >> 16);;
+          }
+        }
+      };
+      break;
+    }
     default: //TODO: Implement other sample types
       throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
   }
-
-  static void buffer_switch(long, ASIOBool) {}
 
   static void sample_rate_changed(ASIOSampleRate) {}
 
@@ -363,6 +381,20 @@ private:
     case kAsioSelectorSupported: return ASIOFalse;
     default: return ASIOFalse;
     }
+  }
+
+  static void buffer_switch(long index, ASIOBool)
+  {
+    instance()->on_buffer_switch(index);
+  }
+
+  void on_buffer_switch(long index) {
+
+    _read(index);
+    _user_callback(*this, _io);
+    _write(index);
+
+    _asio->outputReady();
   }
 
   static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool) {
@@ -547,8 +579,8 @@ private:
 
   bool is_excluded(string_view name) const {
     if (name == "Realtek ASIO") {
-      // Realtek ASIO drivers require features that are not implemented yet,
-      // namely using 24-bit packed samples & non-timestamped buffer switch callbacks
+      // Realtek ASIO drivers seem unstable
+      // Every other time is IASIO::createBuffers called, it fails with ASE_InvalidMode
       return true;
     }
     return false;
