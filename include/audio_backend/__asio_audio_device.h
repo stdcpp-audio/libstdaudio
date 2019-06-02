@@ -322,11 +322,11 @@ private:
     }
   }
 
-  static void buffer_switch(long /*index*/, ASIOBool /*direct_process*/) {}
+  static void buffer_switch(long, ASIOBool) {}
 
-  static void sample_rate_changed(ASIOSampleRate /*sample_rate*/) {}
+  static void sample_rate_changed(ASIOSampleRate) {}
 
-  static long asio_message(long selector, long /*value*/, void* /*message*/, double* /*opt*/) {
+  static long asio_message(long selector, long, void*, double*) {
     switch (selector)
     {
     case kAsioSupportsTimeInfo: return ASIOTrue;
@@ -336,7 +336,7 @@ private:
     }
   }
 
-  static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool /*direct_process*/) {
+  static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool) {
     return _instance->on_buffer_switch(time, index);
   }
 
