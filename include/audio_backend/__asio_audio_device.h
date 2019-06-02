@@ -516,6 +516,8 @@ private:
 
   bool is_excluded(string_view name) const {
     if (name == "Realtek ASIO") {
+      // Realtek ASIO drivers require features that are not implemented yet,
+      // namely using 24-bit packed samples & non-timestamped buffer switch callbacks
       return true;
     }
     return false;
