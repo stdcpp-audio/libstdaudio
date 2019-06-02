@@ -79,7 +79,7 @@ struct audio_device_exception : public runtime_error {
 
 class audio_device {
 public:
-    audio_device() = delete;
+  audio_device() = delete;
 
   ~audio_device() {
     stop();
