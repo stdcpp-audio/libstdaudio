@@ -231,7 +231,7 @@ private:
 
     if (granularity == -1) {
       // Buffers are powers of two
-      for (long size = min; size < max; size *= 2) {
+      for (long size = min; size <= max; size *= 2) {
         _buffer_sizes.push_back(size);
       }
     }
