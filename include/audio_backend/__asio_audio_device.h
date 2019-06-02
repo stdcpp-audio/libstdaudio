@@ -229,24 +229,31 @@ private:
     long granularity;
     _asio->getBufferSize(&min, &max, &_buffer_size, &granularity);
 
-    if (granularity == -1) {
-      // Buffers are powers of two
-      for (long size = min; size <= max; size *= 2) {
-        _buffer_sizes.push_back(size);
-      }
-    }
-    else if (granularity == 0) {
-      _buffer_sizes.push_back(_buffer_size);
-    }
-    else if (granularity > 0) {
-      for (long size = min; size <= max; size += granularity) {
-        _buffer_sizes.push_back(size);
-      }
+    switch (granularity) {
+    default: set_buffers(min, max, granularity); break;
+    case -1: set_buffers_as_powers_of_two(min, max); break;
+    case 0: set_buffers_as_default_size_only(); break;
     }
 
     ASIOChannelInfo info{0, _num_inputs > 0};
     _asio->getChannelInfo(&info);
     _sample_type = info.type;
+  }
+
+  void set_buffers(long min, long max, long granularity) {
+    for (long size = min; size <= max; size += granularity) {
+      _buffer_sizes.push_back(size);
+    }
+  }
+
+  void set_buffers_as_powers_of_two(long min, long max) {
+    for (long size = min; size <= max; size *= 2) {
+      _buffer_sizes.push_back(size);
+    }
+  }
+
+  void set_buffers_as_default_size_only() {
+    _buffer_sizes.push_back(_buffer_size);
   }
 
   void query_sample_rates()
