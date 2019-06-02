@@ -1,4 +1,5 @@
 // libstdaudio
+// libstdaudio
 // Copyright (c) 2019 Andy Saul
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
@@ -78,7 +79,8 @@ public:
     return sample_rate;
   }
 
-  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
+  // TODO: remove tcb scope when std::span is used
+  tcb::span<const sample_rate_t> get_supported_sample_rates() const noexcept {
     return _sample_rates;
   }
 
@@ -93,7 +95,8 @@ public:
     return _buffer_size;
   }
 
-  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
+  // TODO: remove tcb scope when std::span is used
+  tcb::span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
     return _buffer_sizes;
   }
 

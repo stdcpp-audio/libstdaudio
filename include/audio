@@ -9,7 +9,6 @@
 
 // TODO: this is a temporary measure until std::span becomes available
 #include "cpp/span.hpp"
-using namespace TCB_SPAN_NAMESPACE_NAME;
 
 #define _LIBSTDAUDIO_NAMESPACE std::experimental
 

@@ -137,11 +137,12 @@ public:
     return sample_rate;
   }
 
-  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
+  // TODO: remove tcb namespace when std::span is used
+  tcb::span<const sample_rate_t> get_supported_sample_rates() const noexcept {
     assert(!_supported_sample_rates.empty());
     return {
       _supported_sample_rates.data(),
-      static_cast<span<buffer_size_t>::index_type > (_supported_sample_rates.size())
+      static_cast<tcb::span<buffer_size_t>::index_type > (_supported_sample_rates.size())
       // TODO: remove the cast when you move on to a std::span implementation using index_type = size_t!
     };
   }
@@ -183,11 +184,12 @@ public:
     return buffer_size_frames;
   }
 
-  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
+  // TODO: remove tcb namespace when std::byte is used
+  tcb::span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
     assert(!_supported_buffer_sizes.empty());
     return {
       _supported_buffer_sizes.data(),
-      static_cast<span<buffer_size_t>::index_type > (_supported_buffer_sizes.size())
+      static_cast<tcb::span<buffer_size_t>::index_type > (_supported_buffer_sizes.size())
       // TODO: remove the cast when you move on to a std::span implementation using index_type = size_t!
     };
   }
