@@ -48,7 +48,7 @@ public:
     }
   }
 
-  audio_buffer(sample_type** data, index_type num_frames, index_type num_channels,ptr_to_ptr_deinterleaved_t)
+  audio_buffer(sample_type** data, index_type num_frames, index_type num_channels, ptr_to_ptr_deinterleaved_t)
       : _num_frames(num_frames),
         _num_channels(num_channels),
         _stride(1),
