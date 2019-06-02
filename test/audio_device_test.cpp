@@ -515,10 +515,9 @@ TEST_CASE("Repeatedly stopping an output device is not an error")
 }
 
 TEST_CASE("Starting an input device and registering a start callback") {
-  auto start_cb = [](audio_device&){};
-
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
     device.start(std::move(start_cb));
   }
 
@@ -526,10 +525,9 @@ TEST_CASE("Starting an input device and registering a start callback") {
 }
 
 TEST_CASE("Starting an output device and registering a start callback") {
-  auto start_cb = [](audio_device&){};
-
   auto devices = get_audio_output_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
     device.start(std::move(start_cb));
   }
 
@@ -537,11 +535,10 @@ TEST_CASE("Starting an output device and registering a start callback") {
 }
 
 TEST_CASE("Starting an input device and registering both a start and a stop callback") {
-  auto start_cb = [](audio_device&){};
-  auto stop_cb = [](audio_device&){};
-
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
+    auto stop_cb = [](audio_device&){};
     device.start(std::move(start_cb), std::move(stop_cb));
   }
 
@@ -550,11 +547,10 @@ TEST_CASE("Starting an input device and registering both a start and a stop call
 
 
 TEST_CASE("Starting an output device and registering both a start and a stop callback") {
-  auto start_cb = [](audio_device&){};
-  auto stop_cb = [](audio_device&){};
-
   auto devices = get_audio_output_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
+    auto stop_cb = [](audio_device&){};
     device.start(std::move(start_cb), std::move(stop_cb));
   }
 
