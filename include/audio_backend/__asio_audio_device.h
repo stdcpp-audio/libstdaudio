@@ -39,7 +39,7 @@ public:
   explicit audio_device(device_id_t id, string name, CLSID class_id, audio_direction direction)
     : _name(name), _id(id)
   {
-    initialise_asio(class_id, direction);
+    prepare_asio(class_id, direction);
   }
 
   ~audio_device() {
@@ -187,11 +187,11 @@ public:
     }
     _user_callback = move(callback);
 
-    initialise_buffers();
+    allocate_buffers();
   }
 
 private:
-  void initialise_asio(const CLSID class_id, const audio_direction direction) {
+  void prepare_asio(const CLSID class_id, const audio_direction direction) {
     const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&_asio));
     if (result) {
       throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
@@ -200,19 +200,19 @@ private:
       return;
     }
 
-    initialise_callbacks();
-    initialise_io(direction);
-    initialise_sample_rates();
+    set_callbacks();
+    query_io(direction);
+    query_sample_rates();
   }
 
-  void initialise_callbacks() {
+  void set_callbacks() {
     _asio_callbacks.bufferSwitch = &audio_device::buffer_switch;
     _asio_callbacks.bufferSwitchTimeInfo = &audio_device::buffer_switch_time_info;
     _asio_callbacks.asioMessage = &audio_device::asio_message;
     _asio_callbacks.sampleRateDidChange = &audio_device::sample_rate_changed;
   }
 
-  void initialise_io(const audio_direction direction) {
+  void query_io(const audio_direction direction) {
     const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
 
     if (result != ASE_OK) {
@@ -249,7 +249,7 @@ private:
     _sample_type = info.type;
   }
 
-  void initialise_sample_rates()
+  void query_sample_rates()
   {
     constexpr array<sample_rate_t, 6> common_sample_rates = { 44'100, 48'000, 88'200, 96'000, 176'400, 192'000 };
 
@@ -263,7 +263,7 @@ private:
     }
   }
 
-  void initialise_buffers() {
+  void allocate_buffers() {
 
     for (int i = 0; i < _num_inputs; ++i) {
       _asio_buffers.emplace_back(ASIOBufferInfo{ true, i });
@@ -284,14 +284,14 @@ private:
     _io.input_buffer = {_input_samples.data(), static_cast<size_t>(_buffer_size), static_cast<size_t>(_num_inputs), contiguous_interleaved};
     _io.output_buffer = {_output_samples.data(), static_cast<size_t>(_buffer_size), static_cast<size_t>(_num_outputs), contiguous_interleaved};
 
-    initialise_input_buffer_fillers();
-    initialise_output_buffer_fillers();
+    set_input_reader();
+    set_output_writer();
   }
 
-  void initialise_input_buffer_fillers() {
+  void set_input_reader() {
 
     if (!is_input()) {
-      _fill_input_buffers = [](long) {};
+      _read = [](long) {};
       return;
     }
 
@@ -299,7 +299,7 @@ private:
     {
     case ASIOSTInt32LSB:
     {
-      _fill_input_buffers = [&](long index) {
+      _read = [&](long index) {
         auto& in = *_io.input_buffer;
         for (int channel = 0; channel < _num_inputs; ++channel) {
           const auto buffer = static_cast<int32_t*>(_asio_buffers[channel].buffers[index]);
@@ -316,10 +316,10 @@ private:
     }
   }
 
-  void initialise_output_buffer_fillers() {
+  void set_output_writer() {
 
     if (!is_output()) {
-      _fill_output_buffers = [](long) {};
+      _write = [](long) {};
       return;
     }
 
@@ -327,16 +327,16 @@ private:
     {
     case ASIOSTInt32LSB:
     {
-        _fill_output_buffers = [&](long index) {
-          auto& out = *_io.output_buffer;
-          for (int channel = 0; channel < _num_outputs; ++channel) {
-            const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-            for (int frame = 0; frame < out.size_frames(); ++frame) {
-              const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
-              buffer[frame] = sample;
-            }
+      _write = [&](long index) {
+        auto& out = *_io.output_buffer;
+        for (int channel = 0; channel < _num_outputs; ++channel) {
+          const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+          for (int frame = 0; frame < out.size_frames(); ++frame) {
+            const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
+            buffer[frame] = sample;
           }
-        };
+        }
+      };
       break;
     }
     default: //TODO: Implement other sample types
@@ -364,9 +364,9 @@ private:
 
   ASIOTime* on_buffer_switch(ASIOTime* time, long index) {
 
-    _fill_input_buffers(index);
+    _read(index);
     _user_callback(*this, _io);
-    _fill_output_buffers(index);
+    _write(index);
 
     time->timeInfo.flags = kSystemTimeValid | kSamplePositionValid;
     time->timeInfo.samplePosition = _sample_position;
@@ -395,8 +395,8 @@ private:
   vector<float> _output_samples;
 
   using fill_buffers = function<void(long index)>;
-  fill_buffers _fill_input_buffers;
-  fill_buffers _fill_output_buffers;
+  fill_buffers _read;
+  fill_buffers _write;
 
   vector<ASIOBufferInfo> _asio_buffers;
   ASIOCallbacks _asio_callbacks;
