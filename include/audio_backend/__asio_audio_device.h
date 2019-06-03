@@ -1,5 +1,4 @@
 // libstdaudio
-// libstdaudio
 // Copyright (c) 2019 Andy Saul
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
@@ -29,9 +28,48 @@ struct audio_device_exception : public runtime_error {
   }
 };
 
+class __asio_sample_int32_t
+{
+public:
+  static constexpr double _scale = INT32_MAX;
+  __asio_sample_int32_t() = default;
+  __asio_sample_int32_t(int32_t value)
+    : value{value}
+  {}
+  __asio_sample_int32_t(float value)
+    : __asio_sample_int32_t{static_cast<int32_t>(value * _scale)}
+  {}
+
+  int32_t int_value() const {
+    return value;
+  }
+
+private:
+  int32_t value;
+};
+
+class alignas(1) __asio_sample_int24_t
+{
+public:
+  static constexpr int32_t _scale = 0x7f'ffff;
+  __asio_sample_int24_t() = default;
+  __asio_sample_int24_t(int32_t value)
+    : data{value & 0xff, (value >> 8) & 0xff, (value >> 16) & 0xff}
+  {}
+  __asio_sample_int24_t(float value)
+    : __asio_sample_int24_t{static_cast<int32_t>(value * _scale)}
+  {}
+
+  int32_t int_value() const {
+    return ((data[2] << 24) >> 8) | ((data[1] << 8) & 0xff00) | (data[0] & 0xff);
+  }
+
+private:
+  array<int8_t, 3> data;
+};
+
 enum class audio_direction {in, out, full_duplex};
 
-// TODO: templatize audio_device as per 6.4 Device Selection API
 class audio_device final {
 public:
   using device_id_t = int;
@@ -339,10 +377,9 @@ private:
       _write = [&](long index) {
         auto& out = *_io.output_buffer;
         for (int channel = 0; channel < _num_outputs; ++channel) {
-          const auto buffer = static_cast<int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+          const auto buffer = static_cast<__asio_sample_int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
           for (int frame = 0; frame < out.size_frames(); ++frame) {
-            const auto sample = static_cast<int32_t>(INT32_MAX * out(frame, channel));
-            buffer[frame] = sample;
+            buffer[frame] = __asio_sample_int32_t{out(frame, channel)};
           }
         }
       };
@@ -354,13 +391,9 @@ private:
       _write = [&](long index) {
         auto& out = *_io.output_buffer;
         for (int channel = 0; channel < _num_outputs; ++channel) {
-          const auto buffer = static_cast<int8_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-          int byte_offset = 0;
+          const auto buffer = static_cast<__asio_sample_int24_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
           for (int frame = 0; frame < out.size_frames(); ++frame) {
-            const auto sample = static_cast<int32_t>(0x7f'ffff * out(frame, channel));
-            buffer[byte_offset++] = 0xff & sample;
-            buffer[byte_offset++] = 0xff & (sample >> 8);
-            buffer[byte_offset++] = 0xff & (sample >> 16);;
+            buffer[frame] = __asio_sample_int24_t(out(frame, channel));
           }
         }
       };

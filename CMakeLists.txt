@@ -34,3 +34,9 @@ add_executable(test
         test/test_main.cpp
         test/audio_buffer_test.cpp
         test/audio_device_test.cpp)
+
+if (MSVC)
+add_executable(test_asio
+        test/test_main.cpp
+        test/asio_test.cpp)
+endif ()
