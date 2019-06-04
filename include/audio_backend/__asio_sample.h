@@ -9,16 +9,16 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-class __asio_sample_int32_t
+template <typename _SampleType>
+class __asio_sample
 {
 public:
-  static constexpr double _scale = INT32_MAX;
-  __asio_sample_int32_t() = default;
-  __asio_sample_int32_t(int32_t value)
+  __asio_sample() = default;
+  __asio_sample(_SampleType value)
     : value{ value }
   {}
-  __asio_sample_int32_t(float value)
-    : __asio_sample_int32_t{ static_cast<int32_t>(value * _scale) }
+  __asio_sample(float value)
+    : __asio_sample(static_cast<_SampleType>(value * static_cast<double>(numeric_limits<_SampleType>::max())))
   {}
 
   int32_t int_value() const {
@@ -26,7 +26,7 @@ public:
   }
 
 private:
-  int32_t value;
+  _SampleType value;
 };
 
 class alignas(1) __asio_sample_int24_t

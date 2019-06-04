@@ -15,6 +15,7 @@
 #include <forward_list>
 #include <vector>
 #include <functional>
+#include <numeric>
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -29,6 +30,7 @@ struct audio_device_exception : public runtime_error {
     : runtime_error(what) {
   }
 };
+
 enum class audio_direction {in, out, full_duplex};
 
 class audio_device final {
@@ -338,9 +340,9 @@ private:
       _write = [&](long index) {
         auto& out = *_io.output_buffer;
         for (int channel = 0; channel < _num_outputs; ++channel) {
-          const auto buffer = static_cast<__asio_sample_int32_t*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+          const auto buffer = static_cast<__asio_sample<int32_t>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
           for (int frame = 0; frame < out.size_frames(); ++frame) {
-            buffer[frame] = __asio_sample_int32_t{out(frame, channel)};
+            buffer[frame] = __asio_sample<int32_t>{out(frame, channel)};
           }
         }
       };
