@@ -6,6 +6,7 @@
 #pragma once
 
 #include <array>
+#include <numeric>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -29,16 +30,19 @@ private:
   _SampleType value;
 };
 
-class alignas(1) __asio_sample_int24_t
+struct packed24_t{};
+
+template <>
+class alignas(1) __asio_sample<packed24_t>
 {
 public:
   static constexpr int32_t _scale = 0x7f'ffff;
-  __asio_sample_int24_t() = default;
-  __asio_sample_int24_t(int32_t value)
+  __asio_sample() = default;
+  __asio_sample(int32_t value)
     : data{ value & 0xff, (value >> 8) & 0xff, (value >> 16) & 0xff }
   {}
-  __asio_sample_int24_t(float value)
-    : __asio_sample_int24_t{ static_cast<int32_t>(value * _scale) }
+  __asio_sample(float value)
+    : __asio_sample{ static_cast<int32_t>(value * _scale) }
   {}
 
   int32_t int_value() const {

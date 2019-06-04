@@ -23,11 +23,11 @@ TEST_CASE("Converts floating point samples to integer samples", "[asio]")
 
   SECTION("Converts to 24-bit samples")
   {
-    CHECK(__asio_sample_int24_t(0.f).int_value() == 0);
-    CHECK(__asio_sample_int24_t(1.f).int_value() == 0x7f'ffff);
-    CHECK(__asio_sample_int24_t(-1.f).int_value() == -0x7f'ffff);
-    CHECK(__asio_sample_int24_t(0.5f).int_value() == 0x7f'ffff / 2);
-    CHECK(__asio_sample_int24_t(-0.5f).int_value() == -0x7f'ffff / 2);
+    CHECK(__asio_sample<packed24_t>(0.f).int_value() == 0);
+    CHECK(__asio_sample<packed24_t>(1.f).int_value() == 0x7f'ffff);
+    CHECK(__asio_sample<packed24_t>(-1.f).int_value() == -0x7f'ffff);
+    CHECK(__asio_sample<packed24_t>(0.5f).int_value() == 0x7f'ffff / 2);
+    CHECK(__asio_sample<packed24_t>(-0.5f).int_value() == -0x7f'ffff / 2);
   }
 }
 
