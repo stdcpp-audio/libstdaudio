@@ -334,35 +334,22 @@ private:
 
     switch (_sample_type)
     {
-    case ASIOSTInt32LSB:
-    {
-      _write = [&](long index) {
-        auto& out = *_io.output_buffer;
-        for (int channel = 0; channel < _num_outputs; ++channel) {
-          const auto buffer = static_cast<__asio_sample<int32_t>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-          for (int frame = 0; frame < out.size_frames(); ++frame) {
-            buffer[frame] = __asio_sample<int32_t>{out(frame, channel)};
-          }
-        }
-      };
-      break;
-    }
+    case ASIOSTInt32LSB: _write = [this](long index) { write<int32_t>(index); }; break;
+    case ASIOSTInt24LSB: _write = [this](long index) { write<packed24_t>(index); }; break;
+    case ASIOSTInt16LSB: _write = [this](long index) { write<int16_t>(index); }; break;
 
-    case ASIOSTInt24LSB:
-    {
-      _write = [&](long index) {
-        auto& out = *_io.output_buffer;
-        for (int channel = 0; channel < _num_outputs; ++channel) {
-          const auto buffer = static_cast<__asio_sample<packed24_t>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-          for (int frame = 0; frame < out.size_frames(); ++frame) {
-            buffer[frame] = __asio_sample<packed24_t>(out(frame, channel));
-          }
-        }
-      };
-      break;
+    default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
-    default: //TODO: Implement other sample types
-      throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+  }
+
+  template <typename _SampleType>
+  void write (long index) {
+    auto& out = *_io.output_buffer;
+    for (int channel = 0; channel < _num_outputs; ++channel) {
+      const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+      for (int frame = 0; frame < out.size_frames(); ++frame) {
+        buffer[frame] = __asio_sample<_SampleType>{ out(frame, channel) };
+      }
     }
   }
 
@@ -576,6 +563,7 @@ private:
     if (name == "Realtek ASIO") {
       // Realtek ASIO drivers seem unstable
       // Every other time is IASIO::createBuffers called, it fails with ASE_InvalidMode
+      // Play continues after stop is called
       return true;
     }
     return false;
