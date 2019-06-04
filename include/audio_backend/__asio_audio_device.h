@@ -451,10 +451,10 @@ public:
   vector<string> subkeys() const {
     constexpr int max_asio_name_length{32};
     char name[max_asio_name_length];
-    DWORD size{max_asio_name_length};
     vector<string> keys;
 
     for (DWORD index = 0; ; ++index) {
+      DWORD size{max_asio_name_length};
       const auto result = RegEnumKeyEx(_key, index, name, &size, nullptr, nullptr, nullptr, nullptr);
 
       if (result != ERROR_SUCCESS) {
