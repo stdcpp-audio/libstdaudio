@@ -309,6 +309,8 @@ private:
     case ASIOSTInt32LSB: _read = [this](long index) { read<int32_t>(index); }; break;
     case ASIOSTInt24LSB: _read = [this](long index) { read<packed24_t>(index); }; break;
     case ASIOSTInt16LSB: _read = [this](long index) { read<int16_t>(index); }; break;
+    case ASIOSTFloat32LSB: _read = [this](long index) { read<float>(index); }; break;
+    case ASIOSTFloat64LSB: _read = [this](long index) { read<double>(index); }; break;
 
     default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
@@ -338,6 +340,8 @@ private:
     case ASIOSTInt32LSB: _write = [this](long index) { write<int32_t>(index); }; break;
     case ASIOSTInt24LSB: _write = [this](long index) { write<packed24_t>(index); }; break;
     case ASIOSTInt16LSB: _write = [this](long index) { write<int16_t>(index); }; break;
+    case ASIOSTFloat32LSB: _write = [this](long index) { write<float>(index); }; break;
+    case ASIOSTFloat64LSB: _write = [this](long index) { write<double>(index); }; break;
 
     default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
