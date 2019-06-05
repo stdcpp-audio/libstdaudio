@@ -348,7 +348,7 @@ private:
     for (int channel = 0; channel < _num_outputs; ++channel) {
       const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
       for (int frame = 0; frame < out.size_frames(); ++frame) {
-        buffer[frame] = __asio_sample<_SampleType>{ out(frame, channel) };
+        buffer[frame] = {out(frame, channel)};
       }
     }
   }

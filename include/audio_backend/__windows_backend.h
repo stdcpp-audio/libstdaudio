@@ -9,8 +9,6 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-// TODO: templatize audio_device as per 6.4 Device Selection API
-// This will allow us to select between ASIO & WASAPI
 optional<audio_device> get_default_audio_input_device() {
   auto& devices = __asio_devices::get();
   return devices.default_input();
