@@ -311,10 +311,9 @@ private:
       _read = [&](long index) {
         auto& in = *_io.input_buffer;
         for (int channel = 0; channel < _num_inputs; ++channel) {
-          const auto buffer = static_cast<int32_t*>(_asio_buffers[channel].buffers[index]);
+          const auto buffer = static_cast<__asio_sample<int32_t>*>(_asio_buffers[channel].buffers[index]);
           for (int frame = 0; frame < in.size_frames(); ++frame) {
-            const auto sample = static_cast<float>(buffer[frame]) / INT32_MAX;
-            in(frame, channel) = sample;
+            in(frame, channel) = buffer[frame].float_value();
           }
         }
       };

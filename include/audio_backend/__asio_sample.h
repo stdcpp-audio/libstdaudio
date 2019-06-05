@@ -15,15 +15,19 @@ class __asio_sample
 {
 public:
   __asio_sample() = default;
-  __asio_sample(_SampleType value)
+  explicit __asio_sample(_SampleType value)
     : value{ value }
   {}
-  __asio_sample(float value)
+  explicit __asio_sample(float value)
     : __asio_sample(static_cast<_SampleType>(value * static_cast<double>(numeric_limits<_SampleType>::max())))
   {}
 
   int32_t int_value() const {
     return value;
+  }
+
+  float float_value() const {
+    return static_cast<float>(value) / numeric_limits<_SampleType>::max();
   }
 
 private:

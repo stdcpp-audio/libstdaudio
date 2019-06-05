@@ -11,7 +11,6 @@ using namespace std::experimental;
 
 TEST_CASE("Converts floating point samples to integer samples", "[asio]")
 {
-
   SECTION("Converts to 32-bit samples")
   {
     CHECK(__asio_sample<int32_t>(0.f).int_value() == 0);
@@ -40,3 +39,14 @@ TEST_CASE("Converts floating point samples to integer samples", "[asio]")
   }
 }
 
+TEST_CASE("Converts integer samples to floating point samples", "[asio]")
+{
+  SECTION("Converts to 32-bit samples")
+  {
+    CHECK(__asio_sample<int32_t>(0).float_value() == 0.f);
+    CHECK(__asio_sample<int32_t>(0x7fff'ffff).float_value() == 1.f);
+    CHECK(__asio_sample<int32_t>(-0x7fff'ffff).float_value() == -1.f);
+    CHECK(__asio_sample<int32_t>(0x7fff'ffff / 2).float_value() == 0.5f);
+    CHECK(__asio_sample<int32_t>(-0x7fff'ffff / 2).float_value() == -0.5f);
+  }
+}
