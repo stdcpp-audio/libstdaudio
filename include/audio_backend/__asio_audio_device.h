@@ -237,7 +237,7 @@ private:
     case 0: set_buffers_as_default_size_only(); break;
     }
 
-    ASIOChannelInfo info{0, _num_inputs > 0};
+    ASIOChannelInfo info{0, is_input()};
     _asio->getChannelInfo(&info);
     _sample_type = info.type;
   }
@@ -371,8 +371,7 @@ private:
     }
   }
 
-  static void buffer_switch(long index, ASIOBool)
-  {
+  static void buffer_switch(long index, ASIOBool) {
     instance()->on_buffer_switch(index);
   }
 
