@@ -53,6 +53,10 @@ public:
     return ((data[2] << 24) >> 8) | ((data[1] << 8) & 0xff00) | (data[0] & 0xff);
   }
 
+  float float_value() const {
+    return static_cast<float>(int_value()) / _scale;
+  }
+
 private:
   array<int8_t, 3> data;
 };

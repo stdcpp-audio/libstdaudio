@@ -306,21 +306,23 @@ private:
 
     switch (_sample_type)
     {
-    case ASIOSTInt32LSB:
-    {
-      _read = [&](long index) {
-        auto& in = *_io.input_buffer;
-        for (int channel = 0; channel < _num_inputs; ++channel) {
-          const auto buffer = static_cast<__asio_sample<int32_t>*>(_asio_buffers[channel].buffers[index]);
-          for (int frame = 0; frame < in.size_frames(); ++frame) {
-            in(frame, channel) = buffer[frame].float_value();
-          }
-        }
-      };
-      break;
+    case ASIOSTInt32LSB: _read = [this](long index) { read<int32_t>(index); }; break;
+    case ASIOSTInt24LSB: _read = [this](long index) { read<packed24_t>(index); }; break;
+    case ASIOSTInt16LSB: _read = [this](long index) { read<int16_t>(index); }; break;
+
+    default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
-    default: //TODO: Implement other sample types
-      throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+  }
+
+  template <typename _SampleType>
+  void read (long index) {
+
+    auto& in = *_io.input_buffer;
+    for (int channel = 0; channel < _num_inputs; ++channel) {
+      const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[channel].buffers[index]);
+      for (int frame = 0; frame < in.size_frames(); ++frame) {
+        in(frame, channel) = buffer[frame].float_value();
+      }
     }
   }
 
@@ -343,6 +345,7 @@ private:
 
   template <typename _SampleType>
   void write (long index) {
+
     auto& out = *_io.output_buffer;
     for (int channel = 0; channel < _num_outputs; ++channel) {
       const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
