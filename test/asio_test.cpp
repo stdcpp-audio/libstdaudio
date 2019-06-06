@@ -6,6 +6,8 @@
 #include <audio>
 #include <array>
 #include "catch/catch.hpp"
+#include "catch/trompeloeil.hpp"
+#include "trompeloeil.hpp"
 
 using namespace std::experimental;
 
@@ -83,3 +85,32 @@ TEST_CASE("Converts integer samples to floating point samples", "[asio]")
     CHECK(Approx(minus_half).epsilon(0.0001f) == -0.5f);
   }
 }
+
+class mock_asio : public trompeloeil::mock_interface<IASIO>
+{
+public:
+  MAKE_MOCK2(QueryInterface, long(const IID&, void**), override);
+  IMPLEMENT_MOCK0(AddRef);
+  IMPLEMENT_MOCK0(Release);
+  IMPLEMENT_MOCK1(init);
+  IMPLEMENT_MOCK1(getDriverName);
+  IMPLEMENT_MOCK0(getDriverVersion);
+  IMPLEMENT_MOCK1(getErrorMessage);
+  IMPLEMENT_MOCK0(start);
+  IMPLEMENT_MOCK0(stop);
+  IMPLEMENT_MOCK2(getChannels);
+  IMPLEMENT_MOCK2(getLatencies);
+  IMPLEMENT_MOCK4(getBufferSize);
+  IMPLEMENT_MOCK1(canSampleRate);
+  IMPLEMENT_MOCK1(getSampleRate);
+  IMPLEMENT_MOCK1(setSampleRate);
+  IMPLEMENT_MOCK2(getClockSources);
+  IMPLEMENT_MOCK1(setClockSource);
+  IMPLEMENT_MOCK2(getSamplePosition);
+  IMPLEMENT_MOCK1(getChannelInfo);
+  IMPLEMENT_MOCK4(createBuffers);
+  IMPLEMENT_MOCK0(disposeBuffers);
+  IMPLEMENT_MOCK0(controlPanel);
+  IMPLEMENT_MOCK2(future);
+  IMPLEMENT_MOCK0(outputReady);
+};

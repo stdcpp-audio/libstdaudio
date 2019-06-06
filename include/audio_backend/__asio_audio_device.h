@@ -210,7 +210,7 @@ private:
   }
 
   void query_io(const audio_direction direction) {
-    auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
+    const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
 
     if (result != ASE_OK) {
       return;
@@ -268,7 +268,7 @@ private:
         _sample_rates.push_back(sample_rate);
       }
     }
-    if (0 == get_sample_rate() && !_sample_rates.empty()) {
+    if (0 == get_sample_rate()) {
       set_sample_rate(_sample_rates[0]);
     }
   }
