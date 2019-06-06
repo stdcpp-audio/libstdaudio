@@ -4,12 +4,13 @@
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
 #include <audio>
-#include <array>
 #include "catch/catch.hpp"
 #include "catch/trompeloeil.hpp"
 #include "trompeloeil.hpp"
 
 using namespace std::experimental;
+
+using trompeloeil::_;
 
 TEST_CASE("Converts floating point samples to integer samples", "[asio]")
 {
@@ -114,3 +115,76 @@ public:
   IMPLEMENT_MOCK2(future);
   IMPLEMENT_MOCK0(outputReady);
 };
+
+class asio_device_builder
+{
+public:
+  asio_device_builder(mock_asio& asio) : asio(asio)
+  {}
+
+  using audio_device_ptr = std::unique_ptr<audio_device, std::function<void(audio_device*)>>;
+
+  audio_device_ptr operator()()
+  {
+    REQUIRE_CALL(asio, AddRef()).RETURN(1);
+
+    constexpr long  num_channels{ 2 };
+    REQUIRE_CALL(asio, getChannels(_, _))
+      .SIDE_EFFECT(*_1 = num_channels)
+      .SIDE_EFFECT(*_2 = num_channels)
+      .RETURN(0);
+
+    constexpr long min_buffer_size{ 128 };
+    constexpr long max_buffer_size{ 512 };
+    constexpr long preferred_buffer_size{ 256 };
+    constexpr long granularity{ -1 };
+    REQUIRE_CALL(asio, getBufferSize(_, _, _, _))
+      .SIDE_EFFECT(*_1 = min_buffer_size)
+      .SIDE_EFFECT(*_2 = max_buffer_size)
+      .SIDE_EFFECT(*_3 = preferred_buffer_size)
+      .SIDE_EFFECT(*_3 = granularity)
+      .RETURN(0);
+
+    ASIOChannelInfo info{};
+    REQUIRE_CALL(asio, getChannelInfo(_))
+      .SIDE_EFFECT(*_1 = info)
+      .RETURN(0);
+
+    REQUIRE_CALL(asio, canSampleRate(_))
+      .TIMES(6)
+      .RETURN(ASIOTrue);
+
+    constexpr double sample_rate{ 44'100.0 };
+    REQUIRE_CALL(asio, getSampleRate(_))
+      .SIDE_EFFECT(*_1 = sample_rate)
+      .TIMES(AT_LEAST(1))
+      .RETURN(ASIOTrue);
+
+    return {new audio_device(id, name, &asio, direction), [&](auto* device) {
+      REQUIRE_CALL(asio, stop()).RETURN(ASIOTrue);
+      REQUIRE_CALL(asio, Release()).RETURN(0);
+      delete device;
+    }};
+  }
+
+private:
+  mock_asio& asio;
+  audio_device::device_id_t id{ 0 };
+  std::string name;
+  audio_direction direction{ audio_direction::full_duplex };
+};
+
+class asio_device_fixture
+{
+public:
+  mock_asio asio;
+  asio_device_builder make_asio_device{asio};
+};
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates device with default id", "[asio]")
+{
+  auto device = make_asio_device();
+
+  CHECK(device->device_id() == 0);
+}
+

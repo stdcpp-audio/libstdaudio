@@ -210,7 +210,7 @@ private:
   }
 
   void query_io(const audio_direction direction) {
-    const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
+    auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
 
     if (result != ASE_OK) {
       return;
