@@ -576,5 +576,17 @@ TEST_CASE("Stopping an output device that is not running must succeed")
 TEST_CASE("Register device list change callback")
 {
   auto cb = []{};
-  set_audio_device_list_callback(cb);
+  set_audio_device_list_callback(audio_device_list_event::device_list_changed, cb);
+}
+
+TEST_CASE("Register default input device change callback")
+{
+  auto cb = []{};
+  set_audio_device_list_callback(audio_device_list_event::default_input_device_changed, cb);
+}
+
+TEST_CASE("Register default output device change callback")
+{
+  auto cb = []{};
+  set_audio_device_list_callback(audio_device_list_event::default_output_device_changed, cb);
 }

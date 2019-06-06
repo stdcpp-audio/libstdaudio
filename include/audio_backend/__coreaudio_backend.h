@@ -10,6 +10,7 @@
 #include <iostream>
 #include <vector>
 #include <forward_list>
+#include <map>
 #include <AudioToolbox/AudioToolbox.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
@@ -596,9 +597,71 @@ audio_device_list get_audio_output_device_list() {
   return __audio_device_enumerator::get_instance().get_output_device_list();
 }
 
-template <typename F, typename /* = enable_if_t<std::is_nothrow_invocable_v<F>> */ >
-void set_audio_device_list_callback(F&& cb) {
-  // TODO: implement!
+struct __coreaudio_device_config_listener {
+  static void register_callback(audio_device_list_event event, function<void()> cb) {
+    static __coreaudio_device_config_listener dcl;
+    const auto selector = get_coreaudio_selector(event);
+    dcl.callbacks[selector] = move(cb);
+  }
+
+private:
+  map<AudioObjectPropertySelector, function<void()>> callbacks;
+
+  __coreaudio_device_config_listener() {
+    coreaudio_add_internal_callback<kAudioHardwarePropertyDevices>();
+    coreaudio_add_internal_callback<kAudioHardwarePropertyDefaultInputDevice>();
+    coreaudio_add_internal_callback<kAudioHardwarePropertyDefaultOutputDevice>();
+  }
+
+  template <AudioObjectPropertySelector selector>
+  void coreaudio_add_internal_callback() {
+    AudioObjectPropertyAddress pa = {
+        selector,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMaster
+    };
+
+    if (!__coreaudio_util::check_error(AudioObjectAddPropertyListener(
+        kAudioObjectSystemObject, &pa, &coreaudio_internal_callback<selector>, this))) {
+      assert(false); // failed to register device config listener!
+    }
+  }
+
+  template <AudioObjectPropertySelector selector>
+  static OSStatus coreaudio_internal_callback(AudioObjectID device_id,
+                                              UInt32 /* inNumberAddresses */,
+                                              const AudioObjectPropertyAddress* /* inAddresses */,
+                                              void* void_ptr_to_this_listener) {
+    __coreaudio_device_config_listener& this_listener = *reinterpret_cast<__coreaudio_device_config_listener*>(void_ptr_to_this_listener);
+    this_listener.call<selector>();
+    return {};
+  }
+
+  template <AudioObjectPropertySelector selector>
+  void call() {
+    if (auto cb_iter = callbacks.find(selector); cb_iter != callbacks.end()) {
+      invoke(cb_iter->second);
+    }
+  }
+
+  static constexpr AudioObjectPropertySelector get_coreaudio_selector(audio_device_list_event event) noexcept {
+    switch (event) {
+      case audio_device_list_event::device_list_changed:
+        return kAudioHardwarePropertyDevices;
+      case audio_device_list_event::default_input_device_changed:
+        return kAudioHardwarePropertyDefaultInputDevice;
+      case audio_device_list_event::default_output_device_changed:
+        return kAudioHardwarePropertyDefaultOutputDevice;
+      default:
+        assert(false); // invalid event!
+        return {};
+    }
+  }
+};
+
+template <typename F, typename /* = enable_if_t<is_nothrow_invocable_v<F>> */ >
+void set_audio_device_list_callback(audio_device_list_event event, F&& cb) {
+  __coreaudio_device_config_listener::register_callback(event, function<void()>(cb));
 }
 
 _LIBSTDAUDIO_NAMESPACE_END
