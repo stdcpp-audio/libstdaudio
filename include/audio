@@ -9,7 +9,8 @@
 
 // TODO: this is a temporary measure until std::span becomes available
 #include "cpp/span.hpp"
-using namespace TCB_SPAN_NAMESPACE_NAME;
+template <typename ElementType, std::ptrdiff_t Extent = TCB_SPAN_NAMESPACE_NAME::dynamic_extent>
+using span = TCB_SPAN_NAMESPACE_NAME::span<ElementType, Extent>;
 
 #define _LIBSTDAUDIO_NAMESPACE std::experimental
 

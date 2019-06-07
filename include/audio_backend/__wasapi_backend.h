@@ -10,10 +10,15 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <functional>
+#include <thread>
 #include <forward_list>
+#include <atomic>
+#include <cassert>
 #include <initguid.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
+#include <Functiondiscoverykeys_devpkey.h>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -23,11 +28,11 @@ using __wasapi_native_sample_type = float;
 class __wasapi_util
 {
 public:
-	static const CLSID CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-	static const IID IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
-	static const IID IID_IAudioClient = __uuidof(IAudioClient);
-	static const IID IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
-	static const IID IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
+	static const CLSID CLSID_MMDeviceEnumerator;
+	static const IID IID_IMMDeviceEnumerator;
+	static const IID IID_IAudioClient;
+	static const IID IID_IAudioRenderClient;
+	static const IID IID_IAudioCaptureClient;
 
 	class CCoInitialize
 	{
@@ -38,23 +43,30 @@ public:
 		HRESULT m_hr;
 	};
 
+	template<typename T>
 	class AutoRelease
 	{
 	public:
-		AutoRelease(IUnknown*& pUnk) :
-			_pUnk(pUnk)
+		AutoRelease(T*& pValue) :
+			_pValue(pValue)
 		{}
 
 		~AutoRelease()
 		{
-			if (_pUnk != nullptr)
-				_pUnk->Release();
+			if (_pValue != nullptr)
+				_pValue->Release();
 		}
 
 	private:
-		IUnknown*& _pUnk;
+		T*& _pValue;
 	};
 };
+
+const CLSID __wasapi_util::CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
+const IID __wasapi_util::IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
+const IID __wasapi_util::IID_IAudioClient = __uuidof(IAudioClient);
+const IID __wasapi_util::IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
+const IID __wasapi_util::IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 
 struct audio_device_exception : public runtime_error
 {
@@ -113,41 +125,45 @@ public:
 
 	int get_num_input_channels() const noexcept
 	{
-		return is_input() ? _MixFormat->nChannels : 0;
+		return is_input() ? _MixFormat->Format.nChannels : 0;
 	}
 
 	int get_num_output_channels() const noexcept
 	{
-		return is_output() ? _MixFormat->nChannels : 0;
+		return is_output() ? _MixFormat->Format.nChannels : 0;
 	}
 
 	using sample_rate_t = DWORD;
 
+	// TODO: WASAPI allows me to ask whether or not a particular mix format is valid,
+	// but does not provide a way to enumerate valid formats.
+	// Code on the Internet seems to indicate that if you drop down to waveOut/waveIn,
+	// then you can query the device caps using waveOutGetDevCaps()/waveInGetDevCaps().
+	// That will give you a bit-field containing supported commonly-used settings.
+	// That seems like an awful lot of work, but maybe it's okay because we can just
+	// do it in the constructor and call it done.
+	// Reference on how to match WASAPI to WaveOut:
+	// https://docs.microsoft.com/en-us/windows/desktop/CoreAudio/device-roles-for-legacy-windows-multimedia-applications
 	sample_rate_t get_sample_rate() const noexcept
 	{
-		return _MixFormat->nSamplesPerSec;
+		return _MixFormat->Format.nSamplesPerSec;
 	}
 
 	span<const sample_rate_t> get_supported_sample_rates() const noexcept
 	{
+		return {};
 	}
 
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
-		_MixFormat->nSamplesPerSec = new_sample_rate;
+		_MixFormat->Format.nSamplesPerSec = new_sample_rate;
 	}
 
-	using buffer_size_t = uint32_t;
+	using buffer_size_t = WORD;
 
-	// TODO: WASAPI appears to support arbitrary-sized buffers.
-	// How does this API reflect that?
-	// Oh, wait, maybe it's coming from WaveFormat.nBlockAlign?
-	// Then how do I get the available allowed buffer sizes?
-	// And what is the relationship of this to hnsBufferDuration
-	// that is passed to AudioClient::Initialize()?
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
-		return 0;
+		return _MixFormat->Format.nBlockAlign;
 	}
 
 	span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept
@@ -157,7 +173,8 @@ public:
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
-		return false;
+		_MixFormat->Format.nBlockAlign = new_buffer_size;
+		return true;
 	}
 
 	template <typename _SampleType>
@@ -199,25 +216,49 @@ public:
 	{
 		if (!_running)
 		{
-			// TODO: The magic number 10000000 should be modified to reflect the actual buffer size that we're requesting.
-			const int periodicity = 0;
+			_hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+			if (_hEvent == nullptr)
+				return false;
+
+			REFERENCE_TIME periodicity = 0;
+			REFERENCE_TIME buffer_duration = 10000000;
 			HRESULT hr = _pAudioClient->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-				10000000,
+				buffer_duration,
 				periodicity,
 				_MixFormat,
 				nullptr);
+
+			// TODO: Deal with AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED return code by resetting the buffer_duration and retrying:
+			// https://docs.microsoft.com/en-us/windows/desktop/api/audioclient/nf-audioclient-iaudioclient-initialize
 			if (FAILED(hr))
 				return false;
 
-			// TODO: Create an event and pass it to _pAudioClient->SetEventHandle().  We should create the event before initializing the audio client
-			// in case creating the event fails.
+			hr = _pAudioClient->SetEventHandle(_hEvent);
+			if (FAILED(hr))
+				return false;
 
-			// TODO: If we've connected a callback, then create a thread, set its priority to realtime, and then
-			// to a process()/wait() loop in it.
+			hr = _pAudioClient->Start();
+			if (FAILED(hr))
+				return false;
 
-			// TODO: Call the start callback
+			if (_user_callback)
+			{
+				_ProcessingThread = thread{ [this]()
+				{
+					SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+
+					while (_running)
+					{
+						wait();
+						process(_user_callback);
+					}
+				} };
+			}
+
+			start_callback(*this);
+			_stop_callback = stop_callback;
 			_running = true;
 		}
 
@@ -228,11 +269,15 @@ public:
 	{
 		if (_running)
 		{
-			// TODO: If there is a thread running, then join() it here.
-			// TODO: Call the stop callback that was registered in the start() function.
-			
-			_pAudioClient->Stop();
 			_running = false;
+			_ProcessingThread.join();
+
+			_pAudioClient->Stop();
+			if (_hEvent != nullptr)
+			{
+				CloseHandle(_hEvent);
+			}
+			_stop_callback(*this);
 		}
 
 		return true;
@@ -245,21 +290,56 @@ public:
 
 	void wait() const
 	{
-		// TODO: Wait for the event to be signaled
+		WaitForSingleObject(_hEvent, INFINITE);
 	}
 
-	template <typename _CallbackType>
-	void process(_CallbackType&)
+	template <typename _CallbackType,
+		typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
+	void process(_CallbackType& callback)
 	{
-		// TODO: Call AudioRenderClient::GetBuffer() or AudioCaptureClient::GetBuffer().  If it succeeds, then
-		// call the user callback, then call the appropriate ::ReleaseBuffer().
+		if (is_output())
+		{
+			UINT32 CurrentPadding = 0;
+			_pAudioClient->GetCurrentPadding(&CurrentPadding);
+			if (CurrentPadding == 0)
+				return;
+
+			BYTE* pData = nullptr;
+			_pAudioRenderClient->GetBuffer(CurrentPadding, &pData);
+			if (pData == nullptr)
+				return;
+
+			audio_device_io<__wasapi_native_sample_type> device_io;
+			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->Format.nChannels, contiguous_interleaved };
+			callback(*this, device_io);
+
+			_pAudioRenderClient->ReleaseBuffer(CurrentPadding, 0);
+		}
+		else if (is_input())
+		{
+			UINT32 CurrentPadding = 0;
+			_pAudioClient->GetCurrentPadding(&CurrentPadding);
+			if (CurrentPadding == 0)
+				return;
+
+			BYTE* pData = nullptr;
+			_pAudioCaptureClient->GetBuffer(CurrentPadding, &pData);
+			if (pData == nullptr)
+				return;
+
+			audio_device_io<__wasapi_native_sample_type> device_io;
+			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->Format.nChannels, contiguous_interleaved };
+			callback(*this, device_io);
+
+			_pAudioCaptureClient->ReleaseBuffer(CurrentPadding, 0);
+		}
 	}
 
-	constexpr bool has_unprocessed_io() const noexcept
+	bool has_unprocessed_io() const noexcept
 	{
-		// TODO: I think that we need to call AudioClient::GetCurrentPadding() to answer this question?
-		// If it returns 0, then it's false.  If it returns 1, then it's true.
-		return false;
+		UINT32 CurrentPadding = 0;
+		_pAudioClient->GetCurrentPadding(&CurrentPadding);
+		return CurrentPadding > 0;
 	}
 
 private:
@@ -304,6 +384,8 @@ private:
 			hr = pPropertyStore->GetValue(PKEY_Device_FriendlyName, &PropertyVariant);
 			if (SUCCEEDED(hr))
 			{
+				// TODO: This functionality is deprecated.  We need to use WideChartoMultiByte instead.
+				// Hmph.
 				wstring_convert<codecvt_utf8_utf16<wchar_t>> conv;
 				_name = conv.to_bytes(PropertyVariant.pwszVal);
 			}
@@ -331,11 +413,15 @@ private:
 	IAudioClient* _pAudioClient = nullptr;
 	IAudioCaptureClient* _pAudioCaptureClient = nullptr;
 	IAudioRenderClient* _pAudioRenderClient = nullptr;
+	HANDLE _hEvent;
 	wstring _device_id;
-	bool _running = false;
+	atomic<bool> _running = false;
 	string _name;
-	WAVEFORMATEX* _MixFormat;
+	WAVEFORMATEXTENSIBLE* _MixFormat;
+	thread _ProcessingThread;
 
+	using __stop_callback_t = function<void(audio_device&)>;
+	__stop_callback_t _stop_callback;
 	using __wasapi_callback_t = function<void(audio_device&, audio_device_io<__wasapi_native_sample_type>&)>;
 	__wasapi_callback_t _user_callback;
 	audio_device_io<__wasapi_native_sample_type> _current_buffers;
@@ -376,7 +462,7 @@ public:
 	}
 
 private:
-	audio_device_enumerator() = delete;
+	__audio_device_enumerator() = delete;
 
 	static optional<audio_device> get_default_device(bool bOutputDevice)
 	{
