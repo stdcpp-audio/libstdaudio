@@ -128,10 +128,9 @@ public:
   {
     REQUIRE_CALL(asio, AddRef()).RETURN(1);
 
-    constexpr long  num_channels{ 2 };
     REQUIRE_CALL(asio, getChannels(_, _))
-      .SIDE_EFFECT(*_1 = num_channels)
-      .SIDE_EFFECT(*_2 = num_channels)
+      .SIDE_EFFECT(*_1 = num_inputs)
+      .SIDE_EFFECT(*_2 = num_outputs)
       .RETURN(0);
 
     constexpr long min_buffer_size{ 128 };
@@ -167,11 +166,44 @@ public:
     }};
   }
 
+  asio_device_builder& with_id(const audio_device::device_id_t new_id) {
+    id = new_id;
+    return *this;
+  }
+
+  asio_device_builder& with_name(const std::string& new_name) {
+    name = new_name;
+    return *this;
+  }
+
+  asio_device_builder& with_num_input_channels(const long new_num_inputs) {
+    num_inputs = new_num_inputs;
+    return *this;
+  }
+
+  asio_device_builder& with_num_output_channels(const long new_num_outputs) {
+    num_outputs = new_num_outputs;
+    return *this;
+  }
+
+  asio_device_builder& using_inputs_only() {
+    direction = audio_direction::in;
+    return *this;
+  }
+
+  asio_device_builder& using_outputs_only() {
+    direction = audio_direction::out;
+    return *this;
+  }
+
 private:
   mock_asio& asio;
-  audio_device::device_id_t id{ 0 };
+  audio_device::device_id_t id{0};
   std::string name;
-  audio_direction direction{ audio_direction::full_duplex };
+  audio_direction direction{audio_direction::full_duplex};
+
+  long num_inputs{0};
+  long num_outputs{0};
 };
 
 class asio_device_fixture
@@ -181,10 +213,87 @@ public:
   asio_device_builder make_asio_device{asio};
 };
 
-TEST_CASE_METHOD(asio_device_fixture, "Creates device with default id", "[asio]")
+TEST_CASE_METHOD(asio_device_fixture, "Creates device with id", "[asio]")
 {
-  auto device = make_asio_device();
+  auto device = make_asio_device.with_id(42)();
 
-  CHECK(device->device_id() == 0);
+  CHECK(device->device_id() == 42);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates device with name", "[asio]")
+{
+  auto device = make_asio_device.with_name("Fake ASIO")();
+
+  CHECK(device->name() == "Fake ASIO");
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates stereo output device", "[asio]")
+{
+  auto device = make_asio_device.with_num_output_channels(2)();
+
+  CHECK(device->is_output());
+  CHECK(device->get_num_output_channels() == 2);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates mono output device", "[asio]")
+{
+  auto device = make_asio_device.with_num_output_channels(1)();
+
+  CHECK(device->is_output());
+  CHECK(device->get_num_output_channels() == 1);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates stereo input device", "[asio]")
+{
+  auto device = make_asio_device.with_num_input_channels(2)();
+
+  CHECK(device->is_input());
+  CHECK(device->get_num_input_channels() == 2);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates mono input device", "[asio]")
+{
+  auto device = make_asio_device.with_num_input_channels(1)();
+
+  CHECK(device->is_input());
+  CHECK(device->get_num_input_channels() == 1);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates full duplex device", "[asio]")
+{
+  auto device = make_asio_device
+    .with_num_input_channels(4)
+    .with_num_output_channels(4)();
+
+  CHECK(device->is_input());
+  CHECK(device->get_num_input_channels() == 4);
+  CHECK(device->is_output());
+  CHECK(device->get_num_output_channels() == 4);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates input-only device from duplex ASIO", "[asio]")
+{
+  auto device = make_asio_device
+    .with_num_input_channels(4)
+    .with_num_output_channels(4)
+    .using_inputs_only()();
+
+  CHECK(device->is_input());
+  CHECK(device->get_num_input_channels() == 4);
+  CHECK_FALSE(device->is_output());
+  CHECK(device->get_num_output_channels() == 0);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Creates output-only device from duplex ASIO", "[asio]")
+{
+  auto device = make_asio_device
+    .with_num_input_channels(4)
+    .with_num_output_channels(4)
+    .using_outputs_only()();
+
+  CHECK_FALSE(device->is_input());
+  CHECK(device->get_num_input_channels() == 0);
+  CHECK(device->is_output());
+  CHECK(device->get_num_output_channels() == 4);
 }
 
