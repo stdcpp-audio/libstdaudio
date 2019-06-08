@@ -11,6 +11,7 @@
 using namespace std::experimental;
 
 using trompeloeil::_;
+using buffer_size_t = audio_device::buffer_size_t;
 
 TEST_CASE("Converts floating point samples to integer samples", "[asio]")
 {
@@ -133,15 +134,11 @@ public:
       .SIDE_EFFECT(*_2 = num_outputs)
       .RETURN(0);
 
-    constexpr long min_buffer_size{ 128 };
-    constexpr long max_buffer_size{ 512 };
-    constexpr long preferred_buffer_size{ 256 };
-    constexpr long granularity{ -1 };
     REQUIRE_CALL(asio, getBufferSize(_, _, _, _))
       .SIDE_EFFECT(*_1 = min_buffer_size)
       .SIDE_EFFECT(*_2 = max_buffer_size)
       .SIDE_EFFECT(*_3 = preferred_buffer_size)
-      .SIDE_EFFECT(*_3 = granularity)
+      .SIDE_EFFECT(*_4 = granularity)
       .RETURN(0);
 
     ASIOChannelInfo info{};
@@ -196,6 +193,31 @@ public:
     return *this;
   }
 
+  asio_device_builder& with_unique_buffer_size(const long buffer_size) {
+    min_buffer_size = max_buffer_size = preferred_buffer_size = buffer_size;
+    granularity = 0;
+    return *this;
+  }
+
+  asio_device_builder& with_power_of_two_buffer_sizes(const long min, const long max) {
+    min_buffer_size = min;
+    max_buffer_size = max;
+    granularity = -1;
+    return *this;
+  }
+
+  asio_device_builder& with_preferred_buffer_size(const long preferred) {
+    preferred_buffer_size = preferred;
+    return *this;
+  }
+
+  asio_device_builder& with_buffer_size_range(const long min, const long max, const long step) {
+    min_buffer_size = min;
+    max_buffer_size = max;
+    granularity = step;
+    return *this;
+  }
+
 private:
   mock_asio& asio;
   audio_device::device_id_t id{0};
@@ -204,6 +226,11 @@ private:
 
   long num_inputs{0};
   long num_outputs{0};
+
+  long min_buffer_size{128};
+  long max_buffer_size{512};
+  long preferred_buffer_size{256};
+  long granularity{-1};
 };
 
 class asio_device_fixture
@@ -297,3 +324,55 @@ TEST_CASE_METHOD(asio_device_fixture, "Creates output-only device from duplex AS
   CHECK(device->get_num_output_channels() == 4);
 }
 
+TEST_CASE_METHOD(asio_device_fixture, "Supports unique buffer size", "[asio]")
+{
+  auto device = make_asio_device.with_unique_buffer_size(1024)();
+
+  auto buffer_sizes = device->get_supported_buffer_sizes_frames();
+
+  CHECK(buffer_sizes.size() == 1);
+  CHECK(buffer_sizes[0] == 1024);
+  CHECK(device->get_buffer_size_frames() == 1024);
+  CHECK(device->set_buffer_size_frames(1024));
+  CHECK_FALSE(device->set_buffer_size_frames(64));
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Supports power-of-two buffer sizes", "[asio]")
+{
+  const std::array<buffer_size_t, 5> expected_buffer_sizes{64, 128, 256, 512, 1024};
+
+  auto device = make_asio_device
+    .with_power_of_two_buffer_sizes(64, 1024)
+    .with_preferred_buffer_size(256)();
+
+  const auto buffer_sizes = device->get_supported_buffer_sizes_frames();
+  CHECK(buffer_sizes == span<const buffer_size_t>(expected_buffer_sizes));
+  CHECK(device->get_buffer_size_frames() == 256);
+
+  for (const auto size : expected_buffer_sizes) {
+    CHECK(device->set_buffer_size_frames(size));
+    CHECK_FALSE(device->set_buffer_size_frames(size + 1));
+    CHECK_FALSE(device->set_buffer_size_frames(size - 1));
+    CHECK(device->get_buffer_size_frames() == size);
+  }
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Supports buffer size ranges", "[asio]")
+{
+  const std::array<buffer_size_t, 4> expected_buffer_sizes{64, 128, 192, 256};
+
+  auto device = make_asio_device
+    .with_buffer_size_range(64, 256, 64)
+    .with_preferred_buffer_size(192)();
+
+  const auto buffer_sizes = device->get_supported_buffer_sizes_frames();
+  CHECK(buffer_sizes == span<const buffer_size_t>(expected_buffer_sizes));
+  CHECK(device->get_buffer_size_frames() == 192);
+
+  for (const auto size : expected_buffer_sizes) {
+    CHECK(device->set_buffer_size_frames(size));
+    CHECK_FALSE(device->set_buffer_size_frames(size + 1));
+    CHECK_FALSE(device->set_buffer_size_frames(size - 1));
+    CHECK(device->get_buffer_size_frames() == size);
+  }
+}
