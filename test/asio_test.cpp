@@ -11,6 +11,8 @@
 using namespace std::experimental;
 
 using trompeloeil::_;
+
+using sample_rate_t = audio_device::sample_rate_t;
 using buffer_size_t = audio_device::buffer_size_t;
 
 TEST_CASE("Converts floating point samples to integer samples", "[asio]")
@@ -147,7 +149,7 @@ public:
 
     REQUIRE_CALL(asio, canSampleRate(_))
       .TIMES(6)
-      .RETURN(ASIOTrue);
+      .RETURN(is_supported_sample_rate(_1));
 
     constexpr double sample_rate{ 44'100.0 };
     REQUIRE_CALL(asio, getSampleRate(_))
@@ -160,6 +162,12 @@ public:
       REQUIRE_CALL(asio, Release()).RETURN(0);
       delete device;
     }};
+  }
+
+  long is_supported_sample_rate(const sample_rate_t rate) const {
+    return std::find(sample_rates.begin(), sample_rates.end(), rate) == sample_rates.end()
+      ? ASE_NotPresent
+      : ASE_OK;
   }
 
   asio_device_builder& with_id(const audio_device::device_id_t new_id) {
@@ -217,6 +225,11 @@ public:
     return *this;
   }
 
+  asio_device_builder& with_sample_rates(std::vector<sample_rate_t> new_sample_rates) {
+    sample_rates = new_sample_rates;
+    return *this;
+  }
+
 private:
   mock_asio& asio;
   audio_device::device_id_t id{0};
@@ -231,6 +244,8 @@ private:
   long preferred_buffer_size{256};
   long granularity{-1};
   ASIOChannelInfo info{0, ASIOFalse, ASIOFalse, 0, ASIOSTInt32LSB};
+
+  std::vector<sample_rate_t> sample_rates{44'100, 48'000, 88'200, 96'000, 176'400, 192'000};
 };
 
 class asio_device_fixture
@@ -376,3 +391,36 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports buffer size ranges", "[asio]")
     CHECK(device->get_buffer_size_frames() == size);
   }
 }
+
+TEST_CASE_METHOD(asio_device_fixture, "Supports common samplerates", "[asio]")
+{
+  const std::array<sample_rate_t, 6>
+    expected_sample_rates{44'100, 48'000, 88'200, 96'000, 176'400, 192'000};
+
+  auto device = make_asio_device();
+
+  const auto sample_rates = device->get_supported_sample_rates();
+  CHECK(sample_rates == span<const sample_rate_t>(expected_sample_rates));
+
+  for (const auto rate : expected_sample_rates) {
+    ALLOW_CALL(asio, setSampleRate(_)).RETURN(make_asio_device.is_supported_sample_rate(rate));
+    CHECK(device->set_sample_rate(rate));
+  }
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Supports subset of common samplerates", "[asio]")
+{
+  const std::vector<sample_rate_t> expected_sample_rates{44'100, 48'000};
+
+  auto device = make_asio_device.with_sample_rates(expected_sample_rates)();
+
+  const auto sample_rates = device->get_supported_sample_rates();
+  CHECK(sample_rates == span<const sample_rate_t>(expected_sample_rates));
+
+  const std::array<sample_rate_t, 4> banned_sample_rates{88'200, 96'000, 176'400, 192'000};
+  for (const auto rate : banned_sample_rates) {
+    ALLOW_CALL(asio, setSampleRate(_)).RETURN(make_asio_device.is_supported_sample_rate(rate));
+    CHECK_FALSE(device->set_sample_rate(rate));
+  }
+}
+
