@@ -160,6 +160,7 @@ public:
     return {new audio_device(id, name, &asio, direction), [&](auto* device) {
       REQUIRE_CALL(asio, stop()).RETURN(ASIOTrue);
       REQUIRE_CALL(asio, Release()).RETURN(0);
+      ALLOW_CALL(asio, disposeBuffers()).RETURN(0);
       delete device;
     }};
   }
@@ -253,6 +254,21 @@ class asio_device_fixture
 public:
   mock_asio asio;
   asio_device_builder make_asio_device{asio};
+
+  ASIOCallbacks* callbacks;
+  ASIOBufferInfo* asio_buffers;
+  std::vector<int32_t> buffer;
+
+  void allocate_buffers(const uint32_t num_channels, const uint32_t num_frames) {
+    buffer.resize(2 * num_channels * num_frames);
+    auto p = buffer.data();
+    for (uint32_t c = 0; c < num_channels; ++c) {
+      for (uint32_t i = 0; i < 2; ++i) {
+        asio_buffers[c].buffers[i] = p;
+        p += num_frames;
+      }
+    }
+  }
 };
 
 TEST_CASE_METHOD(asio_device_fixture, "Creates device with id", "[asio]")
@@ -452,3 +468,39 @@ TEST_CASE_METHOD(asio_device_fixture, "Device cannot be started before connectio
   CHECK_FALSE(device->start());
 }
 
+TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from legacy callbacks", "[asio]")
+{
+  constexpr long num_channels{2};
+  constexpr long num_frames{32};
+  auto device = make_asio_device
+    .with_num_output_channels(num_channels)
+    .with_unique_buffer_size(num_frames)();
+
+  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
+    .LR_SIDE_EFFECT(asio_buffers = _1)
+    .LR_SIDE_EFFECT(callbacks = _4)
+    .RETURN(0);
+
+  device->connect([&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+    CHECK(device.get() == &d);
+    auto& out = *io.output_buffer;
+    CHECK(io.output_buffer.has_value());
+    CHECK(out.size_channels() == num_channels);
+    for (int frame = 0; frame < out.size_frames(); ++frame) {
+      out(frame, 0) = 1.0f;
+      out(frame, 1) = -1.0f;
+    }
+  });
+
+  allocate_buffers(num_channels, num_frames);
+
+  REQUIRE_CALL(asio, start()).RETURN(0);
+  REQUIRE_CALL(asio, outputReady()).RETURN(0);
+  CHECK(device->start());
+  callbacks->bufferSwitch(0, ASIOFalse);
+
+  auto value = static_cast<int32_t*>(asio_buffers[0].buffers[0]);
+  CHECK(*value == 0x7fff'ffff);
+  value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
+  CHECK(*value == -0x7fff'ffff);
+}
