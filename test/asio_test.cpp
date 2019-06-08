@@ -141,7 +141,6 @@ public:
       .SIDE_EFFECT(*_4 = granularity)
       .RETURN(0);
 
-    ASIOChannelInfo info{};
     REQUIRE_CALL(asio, getChannelInfo(_))
       .SIDE_EFFECT(*_1 = info)
       .RETURN(0);
@@ -231,6 +230,7 @@ private:
   long max_buffer_size{512};
   long preferred_buffer_size{256};
   long granularity{-1};
+  ASIOChannelInfo info{0, ASIOFalse, ASIOFalse, 0, ASIOSTInt32LSB};
 };
 
 class asio_device_fixture
