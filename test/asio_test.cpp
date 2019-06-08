@@ -504,3 +504,45 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from legacy callbac
   value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
   CHECK(*value == -0x7fff'ffff);
 }
+
+TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped callbacks", "[asio]")
+{
+  constexpr long num_channels{2};
+  constexpr long num_frames{32};
+  auto device = make_asio_device
+    .with_num_output_channels(num_channels)
+    .with_unique_buffer_size(num_frames)();
+
+  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
+    .LR_SIDE_EFFECT(asio_buffers = _1)
+    .LR_SIDE_EFFECT(callbacks = _4)
+    .RETURN(0);
+
+  device->connect([&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+    CHECK(device.get() == &d);
+    auto& out = *io.output_buffer;
+    CHECK(io.output_buffer.has_value());
+    CHECK(out.size_channels() == num_channels);
+    for (int frame = 0; frame < out.size_frames(); ++frame) {
+      out(frame, 0) = 1.0f;
+      out(frame, 1) = -1.0f;
+    }
+  });
+
+  allocate_buffers(num_channels, num_frames);
+
+  REQUIRE_CALL(asio, start()).RETURN(0);
+  CHECK(device->start());
+
+  ASIOTime time;
+  auto result = callbacks->bufferSwitchTimeInfo(&time, 0, ASIOFalse);
+  CHECK(result->timeInfo.samplePosition == 0);
+
+  result = callbacks->bufferSwitchTimeInfo(&time, 0, ASIOFalse);
+  CHECK(result->timeInfo.samplePosition == num_frames);
+
+  auto value = static_cast<int32_t*>(asio_buffers[0].buffers[0]);
+  CHECK(*value == 0x7fff'ffff);
+  value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
+  CHECK(*value == -0x7fff'ffff);
+}
