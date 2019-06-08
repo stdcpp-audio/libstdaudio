@@ -546,3 +546,19 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped ca
   value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
   CHECK(*value == -0x7fff'ffff);
 }
+
+TEST_CASE_METHOD(asio_device_fixture, "Device responds to ASIO message callback", "[asio]")
+{
+  auto device = make_asio_device();
+
+  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
+    .LR_SIDE_EFFECT(asio_buffers = _1)
+    .LR_SIDE_EFFECT(callbacks = _4)
+    .RETURN(0);
+
+  device->connect([](auto&, auto&) noexcept {});
+
+  CHECK(callbacks->asioMessage(kAsioSupportsTimeInfo, 0, nullptr, nullptr) == ASIOTrue);
+  CHECK(callbacks->asioMessage(kAsioEngineVersion, 0, nullptr, nullptr) == 2);
+  CHECK(callbacks->asioMessage(kAsioSelectorSupported, 0, nullptr, nullptr) == ASIOFalse);
+}
