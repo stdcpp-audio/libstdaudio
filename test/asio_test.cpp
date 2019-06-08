@@ -445,3 +445,10 @@ TEST_CASE_METHOD(asio_device_fixture, "Device is not running before connection",
   CHECK_FALSE(device->is_running());
 }
 
+TEST_CASE_METHOD(asio_device_fixture, "Device cannot be started before connection", "[asio]")
+{
+  auto device = make_asio_device();
+
+  CHECK_FALSE(device->start());
+}
+
