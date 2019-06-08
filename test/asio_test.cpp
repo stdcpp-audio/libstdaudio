@@ -424,3 +424,24 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports subset of common samplerates", "
   }
 }
 
+TEST_CASE_METHOD(asio_device_fixture, "Can connect to device", "[asio]")
+{
+  auto device = make_asio_device();
+
+  CHECK(device->can_connect());
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Cannot poll device", "[asio]")
+{
+  auto device = make_asio_device();
+
+  CHECK_FALSE(device->can_process());
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Device is not running before connection", "[asio]")
+{
+  auto device = make_asio_device();
+
+  CHECK_FALSE(device->is_running());
+}
+
