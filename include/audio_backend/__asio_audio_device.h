@@ -144,6 +144,9 @@ public:
   }
 
   bool start() {
+    if (_asio_buffers.empty()) {
+      return false;
+    }
     instance(this);
     _sample_position = 0;
     const auto result = _asio->start();
