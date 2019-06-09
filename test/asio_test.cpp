@@ -259,6 +259,15 @@ public:
   ASIOBufferInfo* asio_buffers;
   std::vector<int32_t> buffer;
 
+  template <typename _CallbackType>
+  void connect(audio_device& device, _CallbackType callback) {
+    REQUIRE_CALL(asio, createBuffers(_, _, _, _))
+      .LR_SIDE_EFFECT(asio_buffers = _1)
+      .LR_SIDE_EFFECT(callbacks = _4)
+      .RETURN(0);
+    device.connect(callback);
+  }
+
   void allocate_buffers(const uint32_t num_channels, const uint32_t num_frames) {
     buffer.resize(2 * num_channels * num_frames);
     auto p = buffer.data();
@@ -480,16 +489,12 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from legacy callbac
     .with_num_output_channels(num_channels)
     .with_unique_buffer_size(num_frames)();
 
-  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
-    .LR_SIDE_EFFECT(asio_buffers = _1)
-    .LR_SIDE_EFFECT(callbacks = _4)
-    .RETURN(0);
-
-  device->connect([&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+  connect(*device, [&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
     CHECK(device.get() == &d);
     auto& out = *io.output_buffer;
     CHECK(io.output_buffer.has_value());
     CHECK(out.size_channels() == num_channels);
+    CHECK(out.size_frames() == num_frames);
     for (int frame = 0; frame < out.size_frames(); ++frame) {
       out(frame, 0) = 1.0f;
       out(frame, 1) = -1.0f;
@@ -501,6 +506,7 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from legacy callbac
   REQUIRE_CALL(asio, start()).RETURN(0);
   REQUIRE_CALL(asio, outputReady()).RETURN(0);
   CHECK(device->start());
+
   callbacks->bufferSwitch(0, ASIOFalse);
 
   verify_out_value(0, 0x7fff'ffff);
@@ -515,16 +521,12 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped ca
     .with_num_output_channels(num_channels)
     .with_unique_buffer_size(num_frames)();
 
-  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
-    .LR_SIDE_EFFECT(asio_buffers = _1)
-    .LR_SIDE_EFFECT(callbacks = _4)
-    .RETURN(0);
-
-  device->connect([&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+  connect(*device, [&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
     CHECK(device.get() == &d);
     auto& out = *io.output_buffer;
     CHECK(io.output_buffer.has_value());
     CHECK(out.size_channels() == num_channels);
+    CHECK(out.size_frames() == num_frames);
     for (int frame = 0; frame < out.size_frames(); ++frame) {
       out(frame, 0) = 1.0f;
       out(frame, 1) = -1.0f;
@@ -550,13 +552,7 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped ca
 TEST_CASE_METHOD(asio_device_fixture, "Device responds to ASIO message callback", "[asio]")
 {
   auto device = make_asio_device();
-
-  REQUIRE_CALL(asio, createBuffers(_, _, _, _))
-    .LR_SIDE_EFFECT(asio_buffers = _1)
-    .LR_SIDE_EFFECT(callbacks = _4)
-    .RETURN(0);
-
-  device->connect([](auto&, auto&) noexcept {});
+  connect(*device, [](auto&, auto&) noexcept {});
 
   CHECK(callbacks->asioMessage(kAsioSupportsTimeInfo, 0, nullptr, nullptr) == ASIOTrue);
   CHECK(callbacks->asioMessage(kAsioEngineVersion, 0, nullptr, nullptr) == 2);
