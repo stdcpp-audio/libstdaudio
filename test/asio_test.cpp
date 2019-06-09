@@ -279,8 +279,15 @@ public:
     }
   }
 
-  void verify_out_value(const uint32_t channel, const int32_t value) {
+  void verify_out_value(const uint32_t channel, const int32_t value) const {
     CHECK(*static_cast<int32_t*>(asio_buffers[channel].buffers[0]) == value);
+  }
+
+  void set_input_value(const int channel, const int32_t value) const {
+    auto samples = static_cast<int32_t*>(asio_buffers[channel].buffers[0]);
+    samples[0] = value;
+    samples = static_cast<int32_t*>(asio_buffers[channel].buffers[1]);
+    samples[0] = value;
   }
 };
 
@@ -571,4 +578,33 @@ TEST_CASE_METHOD(asio_device_fixture, "Throws exception if connection attempted 
 
   CHECK(device->is_running());
   CHECK_THROWS_AS(device->connect(no_op), audio_device_exception);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Device reads inputs from legacy callbacks", "[asio]")
+{
+  constexpr long num_channels{ 2 };
+  constexpr long num_frames{ 32 };
+  auto device = make_asio_device
+    .with_num_input_channels(num_channels)
+    .with_unique_buffer_size(num_frames)();
+
+  connect(*device, [&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+    CHECK(device.get() == &d);
+    auto& in = *io.input_buffer;
+    CHECK(io.input_buffer.has_value());
+    CHECK(in.size_channels() == num_channels);
+    CHECK(in.size_frames() == num_frames);
+    CHECK(in(0, 0) == 1.f);
+    CHECK(in(0, 1) == -1.0f);
+  });
+
+  allocate_buffers(num_channels, num_frames);
+  set_input_value(0, 0x7fff'ffff);
+  set_input_value(1, -0x7fff'ffff);
+
+  REQUIRE_CALL(asio, start()).RETURN(0);
+  CHECK(device->start());
+
+  REQUIRE_CALL(asio, outputReady()).RETURN(0);
+  callbacks->bufferSwitch(0, ASIOFalse);
 }
