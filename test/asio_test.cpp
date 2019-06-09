@@ -269,6 +269,10 @@ public:
       }
     }
   }
+
+  void verify_out_value(const uint32_t channel, const int32_t value) {
+    CHECK(*static_cast<int32_t*>(asio_buffers[channel].buffers[0]) == value);
+  }
 };
 
 TEST_CASE_METHOD(asio_device_fixture, "Creates device with id", "[asio]")
@@ -499,10 +503,8 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from legacy callbac
   CHECK(device->start());
   callbacks->bufferSwitch(0, ASIOFalse);
 
-  auto value = static_cast<int32_t*>(asio_buffers[0].buffers[0]);
-  CHECK(*value == 0x7fff'ffff);
-  value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
-  CHECK(*value == -0x7fff'ffff);
+  verify_out_value(0, 0x7fff'ffff);
+  verify_out_value(1, -0x7fff'ffff);
 }
 
 TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped callbacks", "[asio]")
@@ -541,10 +543,8 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped ca
   result = callbacks->bufferSwitchTimeInfo(&time, 0, ASIOFalse);
   CHECK(result->timeInfo.samplePosition == num_frames);
 
-  auto value = static_cast<int32_t*>(asio_buffers[0].buffers[0]);
-  CHECK(*value == 0x7fff'ffff);
-  value = static_cast<int32_t*>(asio_buffers[1].buffers[0]);
-  CHECK(*value == -0x7fff'ffff);
+  verify_out_value(0, 0x7fff'ffff);
+  verify_out_value(1, -0x7fff'ffff);
 }
 
 TEST_CASE_METHOD(asio_device_fixture, "Device responds to ASIO message callback", "[asio]")
