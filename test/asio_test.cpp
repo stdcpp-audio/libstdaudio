@@ -582,8 +582,8 @@ TEST_CASE_METHOD(asio_device_fixture, "Throws exception if connection attempted 
 
 TEST_CASE_METHOD(asio_device_fixture, "Device reads inputs from legacy callbacks", "[asio]")
 {
-  constexpr long num_channels{ 2 };
-  constexpr long num_frames{ 32 };
+  constexpr long num_channels{2};
+  constexpr long num_frames{32};
   auto device = make_asio_device
     .with_num_input_channels(num_channels)
     .with_unique_buffer_size(num_frames)();
@@ -607,4 +607,36 @@ TEST_CASE_METHOD(asio_device_fixture, "Device reads inputs from legacy callbacks
 
   REQUIRE_CALL(asio, outputReady()).RETURN(0);
   callbacks->bufferSwitch(0, ASIOFalse);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Device reads inputs from timestamped callbacks", "[asio]")
+{
+  constexpr long num_channels{2};
+  constexpr long num_frames{32};
+  auto device = make_asio_device
+    .with_num_input_channels(num_channels)
+    .with_unique_buffer_size(num_frames)();
+
+  connect(*device, [&](audio_device& d, audio_device_io<float>& io) mutable noexcept {
+    CHECK(device.get() == &d);
+    auto& in = *io.input_buffer;
+    CHECK(io.input_buffer.has_value());
+    CHECK(in.size_channels() == num_channels);
+    CHECK(in.size_frames() == num_frames);
+    CHECK(in(0, 0) == 1.f);
+    CHECK(in(0, 1) == -1.0f);
+  });
+
+  allocate_buffers(num_channels, num_frames);
+  set_input_value(0, 0x7fff'ffff);
+  set_input_value(1, -0x7fff'ffff);
+
+  REQUIRE_CALL(asio, start()).RETURN(0);
+  CHECK(device->start());
+
+  ASIOTime time;
+  auto result = callbacks->bufferSwitchTimeInfo(&time, 0, ASIOFalse);
+  CHECK(result->timeInfo.samplePosition == 0);
+  result = callbacks->bufferSwitchTimeInfo(&time, 0, ASIOFalse);
+  CHECK(result->timeInfo.samplePosition == num_frames);
 }
