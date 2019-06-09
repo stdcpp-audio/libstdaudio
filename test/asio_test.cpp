@@ -551,10 +551,24 @@ TEST_CASE_METHOD(asio_device_fixture, "Device writes outputs from timestamped ca
 
 TEST_CASE_METHOD(asio_device_fixture, "Device responds to ASIO message callback", "[asio]")
 {
-  auto device = make_asio_device();
+  const auto device = make_asio_device();
   connect(*device, [](auto&, auto&) noexcept {});
 
   CHECK(callbacks->asioMessage(kAsioSupportsTimeInfo, 0, nullptr, nullptr) == ASIOTrue);
   CHECK(callbacks->asioMessage(kAsioEngineVersion, 0, nullptr, nullptr) == 2);
   CHECK(callbacks->asioMessage(kAsioSelectorSupported, 0, nullptr, nullptr) == ASIOFalse);
+}
+
+TEST_CASE_METHOD(asio_device_fixture, "Throws exception if connection attempted when already running", "[asio]")
+{
+  const auto device = make_asio_device
+    .with_num_output_channels(1)
+    .with_unique_buffer_size(1)();
+  const auto no_op = [](auto&, auto&) noexcept {};
+  connect(*device, no_op);
+  REQUIRE_CALL(asio, start()).RETURN(0);
+  CHECK(device->start());
+
+  CHECK(device->is_running());
+  CHECK_THROWS_AS(device->connect(no_op), audio_device_exception);
 }
