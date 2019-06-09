@@ -36,10 +36,10 @@ class audio_device final {
 public:
   using device_id_t = int;
 
-  explicit audio_device(device_id_t id, string name, CLSID class_id, audio_direction direction)
-    : _name(name), _id(id)
+  explicit audio_device(device_id_t id, string name, IASIO* asio, audio_direction direction)
+    : _name(name), _id(id), _asio(asio)
   {
-    prepare_asio(class_id, direction);
+    prepare_asio(direction);
   }
 
   ~audio_device() {
@@ -196,14 +196,7 @@ public:
   }
 
 private:
-  void prepare_asio(const CLSID class_id, const audio_direction direction) {
-    const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&_asio));
-    if (result) {
-      throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
-    }
-    if (!_asio->init(nullptr)) {
-      return;
-    }
+  void prepare_asio(const audio_direction direction) {
 
     set_callbacks();
     query_io(direction);
@@ -218,7 +211,7 @@ private:
   }
 
   void query_io(const audio_direction direction) {
-    const auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
+    auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
 
     if (result != ASE_OK) {
       return;
@@ -232,13 +225,19 @@ private:
     long min;
     long max;
     long granularity;
-    _asio->getBufferSize(&min, &max, &_buffer_size, &granularity);
+    result = _asio->getBufferSize(&min, &max, &_buffer_size, &granularity);
+
+    if (result != ASE_OK) {
+      return;
+    }
 
     switch (granularity) {
     default: set_buffers(min, max, granularity); break;
     case -1: set_buffers_as_powers_of_two(min, max); break;
     case 0: set_buffers_as_default_size_only(); break;
     }
+
+    set_buffer_size_frames(_buffer_size);
 
     ASIOChannelInfo info{0, is_input()};
     _asio->getChannelInfo(&info);
@@ -270,7 +269,7 @@ private:
         _sample_rates.push_back(sample_rate);
       }
     }
-    if (0 == get_sample_rate()) {
+    if (0 == get_sample_rate() && !_sample_rates.empty()) {
       set_sample_rate(_sample_rates[0]);
     }
   }
@@ -550,7 +549,18 @@ private:
       CLSID class_id;
       CLSIDFromString(CComBSTR(clsid.c_str()), &class_id);
 
-      auto device = audio_device{index++, name, class_id, direction};
+      CComPtr<IASIO> asio;
+      const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&asio));
+      if (result) {
+        throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
+      }
+
+      if (!asio->init(nullptr)) {
+        // Failed call to init, device not connected
+        continue;
+      }
+
+      auto device = audio_device{index++, name, asio, direction};
       if (is_required(device, direction)) {
         devices.push_front(move(device));
       }
