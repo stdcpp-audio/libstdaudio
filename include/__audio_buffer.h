@@ -5,6 +5,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <chrono>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN

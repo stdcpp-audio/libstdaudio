@@ -15,6 +15,7 @@
 #include <forward_list>
 #include <atomic>
 #include <cassert>
+#include <string_view>
 #include <initguid.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
@@ -231,6 +232,7 @@ public:
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
 		_MixFormat->nSamplesPerSec = new_sample_rate;
+		return true;
 	}
 
 	using buffer_size_t = WORD;
@@ -391,21 +393,23 @@ public:
 		}
 		else if (is_input())
 		{
-			UINT32 CurrentPadding = 0;
-			_pAudioClient->GetCurrentPadding(&CurrentPadding);
-			if (CurrentPadding == 0)
+			UINT32 NumFrames = 0;
+			_pAudioCaptureClient->GetNextPacketSize(&NumFrames);
+			if (NumFrames == 0)
 				return;
 
+			// TODO: Support device position.
+			DWORD dwFlags = 0;
 			BYTE* pData = nullptr;
-			_pAudioCaptureClient->GetBuffer(CurrentPadding, &pData);
+			_pAudioCaptureClient->GetBuffer(&pData, &NumFrames, &dwFlags, nullptr, nullptr);
 			if (pData == nullptr)
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->nChannels, contiguous_interleaved };
+			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFrames, _MixFormat->nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
-			_pAudioCaptureClient->ReleaseBuffer(CurrentPadding, 0);
+			_pAudioCaptureClient->ReleaseBuffer(NumFrames);
 		}
 	}
 

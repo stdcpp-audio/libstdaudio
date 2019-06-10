@@ -3,6 +3,10 @@
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE.md or copy at http://boost.org/LICENSE_1_0.txt)
 
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
+
 #include <cmath>
 #include <array>
 #include <thread>
@@ -30,7 +34,7 @@ struct synthesiser {
   float get_next_sample() {
     assert (_sample_rate > 0);
 
-    _ms_counter += 1000. / _sample_rate;
+    _ms_counter += 1000.0f / _sample_rate;
     if (_ms_counter >= _note_duration_ms) {
       _ms_counter = 0;
       if (++_current_note_index < notes.size()) {
