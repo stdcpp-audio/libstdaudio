@@ -481,7 +481,7 @@ public:
     RegQueryValueExA(_key, name, nullptr, nullptr, nullptr, &size);
 
     string value(size + 1, 0);
-    RegQueryValueExA(_key, name, nullptr, nullptr, LPBYTE(value.data()), &size);
+    RegQueryValueExA(_key, name, nullptr, nullptr, reinterpret_cast<LPBYTE>(value.data()), &size);
 
     return value;
   }
@@ -533,7 +533,7 @@ private:
   audio_device_list enumerate(audio_direction direction) const {
     audio_device_list devices;
 
-    __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, "software\\asio");
+    __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, R"(software\asio)");
 
     int index = 0;
     for (const auto& name : asio_reg.subkeys()) {
