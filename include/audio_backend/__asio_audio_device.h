@@ -81,8 +81,7 @@ public:
     return sample_rate;
   }
 
-  // TODO: remove tcb scope when std::span is used
-  tcb::span<const sample_rate_t> get_supported_sample_rates() const noexcept {
+  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
     return _sample_rates;
   }
 
@@ -97,8 +96,7 @@ public:
     return _buffer_size;
   }
 
-  // TODO: remove tcb scope when std::span is used
-  tcb::span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
+  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
     return _buffer_sizes;
   }
 

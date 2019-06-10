@@ -137,8 +137,7 @@ public:
     return sample_rate;
   }
 
-  // TODO: remove tcb namespace when std::span is used
-  tcb::span<const sample_rate_t> get_supported_sample_rates() const noexcept {
+  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
     assert(!_supported_sample_rates.empty());
     return {
       _supported_sample_rates.data(),
@@ -184,8 +183,7 @@ public:
     return buffer_size_frames;
   }
 
-  // TODO: remove tcb namespace when std::byte is used
-  tcb::span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
+  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
     assert(!_supported_buffer_sizes.empty());
     return {
       _supported_buffer_sizes.data(),
