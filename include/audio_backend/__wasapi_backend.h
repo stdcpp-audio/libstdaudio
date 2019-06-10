@@ -60,6 +60,30 @@ public:
 	private:
 		T*& _pValue;
 	};
+
+	static string ConvertString(const wchar_t* widestring)
+	{
+		int RequiredCharacters = WideCharToMultiByte(CP_UTF8, 0, widestring, -1, nullptr, 0, nullptr, nullptr);
+		if (RequiredCharacters <= 0)
+			return {};
+
+		string Output;
+		Output.resize(static_cast<size_t>(RequiredCharacters));
+		WideCharToMultiByte(CP_UTF8, 0, widestring, -1, Output.data(), static_cast<int>(Output.size()), nullptr, nullptr);
+		return Output;
+	}
+
+	static string ConvertString(const wstring& input)
+	{
+		int RequiredCharacters = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), static_cast<int>(input.size()), nullptr, 0, nullptr, nullptr);
+		if (RequiredCharacters <= 0)
+			return {};
+
+		string Output;
+		Output.resize(static_cast<size_t>(RequiredCharacters));
+		WideCharToMultiByte(CP_UTF8, 0, input.c_str(), static_cast<int>(input.size()), Output.data(), static_cast<int>(Output.size()), nullptr, nullptr);
+		return Output;
+	}
 };
 
 const CLSID __wasapi_util::CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
@@ -80,6 +104,56 @@ class audio_device
 {
 public:
 	audio_device() = delete;
+	audio_device(const audio_device&) = delete;
+	audio_device& operator=(const audio_device&) = delete;
+
+	audio_device(audio_device&& other) :
+		_pDevice(other._pDevice),
+		_pAudioClient(other._pAudioClient),
+		_pAudioCaptureClient(other._pAudioCaptureClient),
+		_pAudioRenderClient(other._pAudioRenderClient),
+		_hEvent(other._hEvent),
+		_device_id(std::move(other._device_id)),
+		_running(other._running.load()),
+		_name(std::move(other._name)),
+		_MixFormat(other._MixFormat),
+		_ProcessingThread(std::move(other._ProcessingThread)),
+		_stop_callback(std::move(other._stop_callback)),
+		_user_callback(std::move(other._user_callback))
+	{
+		other._pDevice = nullptr;
+		other._pAudioClient = nullptr;
+		other._pAudioCaptureClient = nullptr;
+		other._pAudioRenderClient = nullptr;
+		other._hEvent = nullptr;
+		other._MixFormat = nullptr;
+	}
+
+	audio_device& operator=(audio_device&& other)
+	{
+		if (this == &other)
+			return *this;
+
+		_pDevice = other._pDevice;
+		_pAudioClient = other._pAudioClient;
+		_pAudioCaptureClient = other._pAudioCaptureClient;
+		_pAudioRenderClient = other._pAudioRenderClient;
+		_hEvent = other._hEvent;
+		_device_id = std::move(other._device_id);
+		_running = other._running.load();
+		_name = std::move(other._name);
+		_MixFormat = other._MixFormat;
+		_ProcessingThread = std::move(other._ProcessingThread);
+		_stop_callback = std::move(other._stop_callback);
+		_user_callback = std::move(other._user_callback);
+
+		other._pDevice = nullptr;
+		other._pAudioClient = nullptr;
+		other._pAudioCaptureClient = nullptr;
+		other._pAudioRenderClient = nullptr;
+		other._hEvent = nullptr;
+		other._MixFormat = nullptr;
+	}
 
 	~audio_device()
 	{
@@ -125,12 +199,12 @@ public:
 
 	int get_num_input_channels() const noexcept
 	{
-		return is_input() ? _MixFormat->Format.nChannels : 0;
+		return is_input() ? _MixFormat->nChannels : 0;
 	}
 
 	int get_num_output_channels() const noexcept
 	{
-		return is_output() ? _MixFormat->Format.nChannels : 0;
+		return is_output() ? _MixFormat->nChannels : 0;
 	}
 
 	using sample_rate_t = DWORD;
@@ -146,7 +220,7 @@ public:
 	// https://docs.microsoft.com/en-us/windows/desktop/CoreAudio/device-roles-for-legacy-windows-multimedia-applications
 	sample_rate_t get_sample_rate() const noexcept
 	{
-		return _MixFormat->Format.nSamplesPerSec;
+		return _MixFormat->nSamplesPerSec;
 	}
 
 	span<const sample_rate_t> get_supported_sample_rates() const noexcept
@@ -156,14 +230,14 @@ public:
 
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
-		_MixFormat->Format.nSamplesPerSec = new_sample_rate;
+		_MixFormat->nSamplesPerSec = new_sample_rate;
 	}
 
 	using buffer_size_t = WORD;
 
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
-		return _MixFormat->Format.nBlockAlign;
+		return _MixFormat->nBlockAlign;
 	}
 
 	span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept
@@ -173,7 +247,7 @@ public:
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
-		_MixFormat->Format.nBlockAlign = new_buffer_size;
+		_MixFormat->nBlockAlign = new_buffer_size;
 		return true;
 	}
 
@@ -294,7 +368,7 @@ public:
 	}
 
 	template <typename _CallbackType,
-		typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
+		typename = enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
 	void process(_CallbackType& callback)
 	{
 		if (is_output())
@@ -310,7 +384,7 @@ public:
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->Format.nChannels, contiguous_interleaved };
+			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
 			_pAudioRenderClient->ReleaseBuffer(CurrentPadding, 0);
@@ -328,7 +402,7 @@ public:
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->Format.nChannels, contiguous_interleaved };
+			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
 			_pAudioCaptureClient->ReleaseBuffer(CurrentPadding, 0);
@@ -384,10 +458,7 @@ private:
 			hr = pPropertyStore->GetValue(PKEY_Device_FriendlyName, &PropertyVariant);
 			if (SUCCEEDED(hr))
 			{
-				// TODO: This functionality is deprecated.  We need to use WideChartoMultiByte instead.
-				// Hmph.
-				wstring_convert<codecvt_utf8_utf16<wchar_t>> conv;
-				_name = conv.to_bytes(PropertyVariant.pwszVal);
+				_name = __wasapi_util::ConvertString(PropertyVariant.pwszVal);
 			}
 
 			PropVariantClear(&PropertyVariant);
@@ -396,12 +467,12 @@ private:
 
 	void _init_audio_client()
 	{
-		HRESULT hr = _pDevice->Activate(__wasapi_util::IID_IAudioClient, CLSCTX_ALL, nullptr, &_pAudioClient);
+		HRESULT hr = _pDevice->Activate(__wasapi_util::IID_IAudioClient, CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&_pAudioClient));
 		if (FAILED(hr))
 			return;
 
-		/*HRESULT render_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioRenderClient, &_pAudioRenderClient);
-		/*HRESULT capture_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioCaptureClient, &_pAudioCaptureClient);
+		/*HRESULT render_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioRenderClient, reinterpret_cast<void**>(&_pAudioRenderClient));
+		/*HRESULT capture_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioCaptureClient, reinterpret_cast<void**>(&_pAudioCaptureClient));
 	}
 
 	void _init_mix_format()
@@ -417,7 +488,7 @@ private:
 	wstring _device_id;
 	atomic<bool> _running = false;
 	string _name;
-	WAVEFORMATEXTENSIBLE* _MixFormat;
+	WAVEFORMATEX* _MixFormat;
 	thread _ProcessingThread;
 
 	using __stop_callback_t = function<void(audio_device&)>;
@@ -474,7 +545,7 @@ private:
 		HRESULT hr = CoCreateInstance(
 			__wasapi_util::CLSID_MMDeviceEnumerator, nullptr,
 			CLSCTX_ALL, __wasapi_util::IID_IMMDeviceEnumerator,
-			static_cast<void**>(&pEnumerator));
+			reinterpret_cast<void**>(&pEnumerator));
 
 		if (FAILED(hr))
 			return nullopt;
@@ -496,7 +567,7 @@ private:
 		HRESULT hr = CoCreateInstance(
 			__wasapi_util::CLSID_MMDeviceEnumerator, nullptr,
 			CLSCTX_ALL, __wasapi_util::IID_IMMDeviceEnumerator,
-			static_cast<void**>(&pEnumerator));
+			reinterpret_cast<void**>(&pEnumerator));
 		if (FAILED(hr))
 			return {};
 
@@ -539,7 +610,7 @@ private:
 		audio_device_list devices;
 		const auto mmdevices = get_devices();
 
-		for (const auto mmdevice : mmdevices) {
+		for (auto* mmdevice : mmdevices) {
 			auto device = audio_device{ mmdevice };
 			if (condition(device))
 				devices.push_front(move(device));
