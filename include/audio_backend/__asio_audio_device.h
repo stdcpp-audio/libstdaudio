@@ -553,8 +553,7 @@ private:
         throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
       }
 
-      if (!asio->init(nullptr)) {
-        // Failed call to init, device not connected
+      if (!is_connected(asio)) {
         continue;
       }
 
@@ -575,7 +574,7 @@ private:
     };
   }
 
-  bool is_excluded(string_view name) const {
+  static bool is_excluded(string_view name) {
     if (name == "Realtek ASIO") {
       // Realtek ASIO drivers seem unstable
       // Every other time is IASIO::createBuffers called, it fails with ASE_InvalidMode
@@ -583,6 +582,10 @@ private:
       return true;
     }
     return false;
+  }
+
+  static bool is_connected(IASIO* asio) {
+    return ASIOTrue == asio->init(nullptr);
   }
 };
 
