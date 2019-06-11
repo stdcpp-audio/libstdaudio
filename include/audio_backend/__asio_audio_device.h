@@ -47,6 +47,7 @@ public:
     if (!_asio_buffers.empty()) {
       _asio->disposeBuffers();
     }
+    instance(nullptr);
   }
 
   string_view name() const noexcept {
@@ -427,8 +428,11 @@ private:
   vector<ASIOBufferInfo> _asio_buffers;
   ASIOCallbacks _asio_callbacks;
 
-  static audio_device* instance(audio_device* d = nullptr) {
-    static audio_device* device = d;
+  static audio_device* instance(optional<audio_device*> new_device = {}) {
+    static audio_device* device = nullptr;
+    if (new_device.has_value()) {
+      device = *new_device;
+    }
     return device;
   }
 };
