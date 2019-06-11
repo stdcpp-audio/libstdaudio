@@ -22,7 +22,7 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-using __asio_common_sample_type = float;
+using __asio_common_sample_t = float;
 
 struct audio_device_exception : public runtime_error {
   explicit audio_device_exception(const char* what) : runtime_error(what) {}
@@ -108,7 +108,7 @@ public:
 
   template<class _SampleType>
   constexpr bool supports_sample_type() const noexcept {
-    return is_same_v<_SampleType, __asio_common_sample_type>;
+    return is_same_v<_SampleType, __asio_common_sample_t>;
   }
 
   constexpr bool can_connect() const noexcept {
@@ -407,11 +407,11 @@ private:
   ASIOSampleType _sample_type;
   ASIOSamples _sample_position{0};
 
-  using __asio_callback_t = function<void(audio_device&, audio_device_io<float>&)>;
+  using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_t>&)>;
   __asio_callback_t _user_callback;
-  audio_device_io<__asio_common_sample_type> _io;
-  vector<float> _input_samples;
-  vector<float> _output_samples;
+  audio_device_io<__asio_common_sample_t> _io;
+  vector<__asio_common_sample_t> _input_samples;
+  vector<__asio_common_sample_t> _output_samples;
 
   using fill_buffers = function<void(long index)>;
   fill_buffers _read;
