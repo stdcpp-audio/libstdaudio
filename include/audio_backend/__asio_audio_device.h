@@ -532,37 +532,46 @@ private:
 
   audio_device_list enumerate(audio_direction direction) const {
     audio_device_list devices;
+    _index = 0;
 
-    __reg_key_reader asio_reg(HKEY_LOCAL_MACHINE, R"(software\asio)");
+    for (const auto& name : _asio_reg.subkeys()) {
 
-    int index = 0;
-    for (const auto& name : asio_reg.subkeys()) {
+      auto device = open_device(name, direction);
 
-      if (is_excluded(name)) {
-        continue;
-      }
-      const auto key = asio_reg.subkey(name);
-      const auto clsid = key.value("CLSID");
-
-      CLSID class_id;
-      CLSIDFromString(CComBSTR(clsid.c_str()), &class_id);
-
-      CComPtr<IASIO> asio;
-      const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&asio));
-      if (result) {
-        throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
-      }
-
-      if (!is_connected(asio)) {
-        continue;
-      }
-
-      auto device = audio_device{index++, name, asio, direction};
-      if (is_required(device, direction)) {
-        devices.push_front(move(device));
+      if (device) {
+        devices.push_front(move(*device));
       }
     }
     return devices;
+  }
+
+  optional<audio_device> open_device(const string& name, const audio_direction direction) const {
+
+    if (is_excluded(name)) {
+      return {};
+    }
+    const auto key = _asio_reg.subkey(name);
+    const auto value = key.value("CLSID");
+
+    CLSID class_id;
+    CLSIDFromString(CComBSTR(value.c_str()), &class_id);
+
+    CComPtr<IASIO> asio;
+    const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&asio));
+    if (result) {
+      throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
+    }
+
+    if (!is_connected(asio)) {
+      return {};
+    }
+
+    const auto device = audio_device(_index++, name, asio, direction);
+    if (!is_required(device, direction)) {
+      return {};
+    }
+
+    return device;
   }
 
   static bool is_required(const audio_device& device, const audio_direction direction) {
@@ -587,6 +596,9 @@ private:
   static bool is_connected(IASIO* asio) {
     return ASIOTrue == asio->init(nullptr);
   }
+
+  __reg_key_reader _asio_reg{HKEY_LOCAL_MACHINE, R"(software\asio)"};
+  mutable int _index{0};
 };
 
 _LIBSTDAUDIO_NAMESPACE_END
