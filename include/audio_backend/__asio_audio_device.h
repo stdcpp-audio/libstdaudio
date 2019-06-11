@@ -444,11 +444,7 @@ class __reg_key_reader final
 {
 public:
   __reg_key_reader(HKEY key, const string& subkey) {
-    const auto result = RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key);
-
-    if (ERROR_SUCCESS != result) {
-      throw runtime_error("Failed to read info from registry: 0x" + result);
-    }
+    RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key);
   }
 
   ~__reg_key_reader() {
