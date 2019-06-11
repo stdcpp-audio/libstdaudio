@@ -10,13 +10,13 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
-template<typename _SampleType>
+template<class _SampleType>
 class __asio_sample {
 public:
   __asio_sample() = default;
   explicit __asio_sample(_SampleType value) : _value{value} {}
 
-  template<typename _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
+  template<class _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
   explicit __asio_sample(float value)
     : __asio_sample(static_cast<_SampleType>(value * static_cast<double>(numeric_limits<_SampleType>::max()))) {}
 
@@ -24,12 +24,12 @@ public:
     return _value;
   }
 
-  template<typename _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
+  template<class _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
   float float_value() const {
     return static_cast<float>(_value) / numeric_limits<_SampleType>::max();
   }
 
-  template<typename _FloatType = _SampleType, enable_if_t<is_floating_point<_FloatType>::value, int> = 0>
+  template<class _FloatType = _SampleType, enable_if_t<is_floating_point<_FloatType>::value, int> = 0>
   float float_value() const {
     return static_cast<float>(_value);
   }

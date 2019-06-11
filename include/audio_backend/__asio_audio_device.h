@@ -106,7 +106,7 @@ public:
     return true;
   }
 
-  template<typename _SampleType>
+  template<class _SampleType>
   constexpr bool supports_sample_type() const noexcept {
     return is_same_v<_SampleType, __asio_common_sample_type>;
   }
@@ -122,10 +122,10 @@ public:
   // TODO: remove std::function as soon as C++20 default-ctable lambda and lambda in unevaluated contexts become available
   using no_op_t = std::function<void(audio_device&)>;
 
-  template<typename _StartCallbackType = no_op_t,
-           typename _StopCallbackType = no_op_t,
+  template<class _StartCallbackType = no_op_t,
+           class _StopCallbackType = no_op_t,
            // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
-           typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+           class = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
   bool start(_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
              _StopCallbackType&& stop_callback = [](audio_device&) noexcept {}) {
 
@@ -175,12 +175,12 @@ public:
     assert(false);
   }
 
-  template<typename _CallbackType>
+  template<class _CallbackType>
   void process(_CallbackType&) {
     assert(false);
   }
 
-  template<typename _CallbackType, typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>>>
+  template<class _CallbackType, class = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>>>
   void connect(_CallbackType callback) {
     if (_running) {
       throw audio_device_exception("cannot connect to running audio_device");
@@ -311,7 +311,7 @@ private:
     }
   }
 
-  template<typename _SampleType>
+  template<class _SampleType>
   void read(long index) {
 
     auto& in = *_io.input_buffer;
@@ -341,7 +341,7 @@ private:
     }
   }
 
-  template<typename _SampleType>
+  template<class _SampleType>
   void write(long index) {
 
     auto& out = *_io.output_buffer;

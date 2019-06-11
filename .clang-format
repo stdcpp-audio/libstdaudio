@@ -2,7 +2,7 @@
 
 BasedOnStyle: LLVM
 
-ColumnLimit: 100          # Arbitrary, feel free to adjust locally. 0 to ignore.
+ColumnLimit: 120          # Arbitrary, feel free to adjust locally. 0 to ignore.
 PenaltyExcessCharacter: 1 # Softest limit on line length.
 ReflowComments: false     # Best we don't do this without a consistent length limit.
 
