@@ -29,11 +29,31 @@ using __wasapi_native_sample_type = float;
 class __wasapi_util
 {
 public:
-	static const CLSID CLSID_MMDeviceEnumerator;
-	static const IID IID_IMMDeviceEnumerator;
-	static const IID IID_IAudioClient;
-	static const IID IID_IAudioRenderClient;
-	static const IID IID_IAudioCaptureClient;
+	static const CLSID& GetMMDeviceEnumeratorClassId()
+	{
+		static const CLSID MMDeviceEnumeratorClassId = __uuidof(MMDeviceEnumerator);
+		return MMDeviceEnumeratorClassId;
+	}
+	static const IID& GetIMMDeviceEnumeratorInterfaceId()
+	{
+		static const IID IMMDeviceEnumeratorInterfaceId = __uuidof(IMMDeviceEnumerator);
+		return IMMDeviceEnumeratorInterfaceId;
+	}
+	static const IID& GetIAudioClientInterfaceId()
+	{
+		static const IID IAudioClientInterfaceId = __uuidof(IAudioClient);
+		return IAudioClientInterfaceId;
+	}
+	static const IID& GetIAudioRenderClientInterfaceId()
+	{
+		static const IID IAudioRenderClientInterfaceId = __uuidof(IAudioRenderClient);
+		return IAudioRenderClientInterfaceId;
+	}
+	static const IID& GetIAudioCaptureClientInterfaceId()
+	{
+		static const IID IAudioCaptureClientInterfaceId = __uuidof(IAudioCaptureClient);
+		return IAudioCaptureClientInterfaceId;
+	}
 
 	class CCoInitialize
 	{
@@ -86,12 +106,6 @@ public:
 		return Output;
 	}
 };
-
-const CLSID __wasapi_util::CLSID_MMDeviceEnumerator = __uuidof(MMDeviceEnumerator);
-const IID __wasapi_util::IID_IMMDeviceEnumerator = __uuidof(IMMDeviceEnumerator);
-const IID __wasapi_util::IID_IAudioClient = __uuidof(IAudioClient);
-const IID __wasapi_util::IID_IAudioRenderClient = __uuidof(IAudioRenderClient);
-const IID __wasapi_util::IID_IAudioCaptureClient = __uuidof(IAudioCaptureClient);
 
 struct audio_device_exception : public runtime_error
 {
@@ -311,6 +325,9 @@ public:
 			if (FAILED(hr))
 				return false;
 
+			/*HRESULT render_hr =*/ _pAudioClient->GetService(__wasapi_util::GetIAudioRenderClientInterfaceId(), reinterpret_cast<void**>(&_pAudioRenderClient));
+			/*HRESULT capture_hr =*/ _pAudioClient->GetService(__wasapi_util::GetIAudioCaptureClientInterfaceId(), reinterpret_cast<void**>(&_pAudioCaptureClient));
+
 			hr = _pAudioClient->SetEventHandle(_hEvent);
 			if (FAILED(hr))
 				return false;
@@ -434,7 +451,10 @@ private:
 
 		_init_audio_client();
 		assert(_pAudioClient != nullptr);
-		assert(_pAudioCaptureClient != nullptr || _pAudioRenderClient != nullptr);
+		// TODO: How can I tell whether this is an audio input device or an output device?
+		// I can't get these interfaces until I call Initialize(), but I don't want to do that
+		// until I'm ready to start...
+		//assert(_pAudioCaptureClient != nullptr || _pAudioRenderClient != nullptr);
 
 		_init_mix_format();
 		assert(_MixFormat != nullptr);
@@ -471,12 +491,9 @@ private:
 
 	void _init_audio_client()
 	{
-		HRESULT hr = _pDevice->Activate(__wasapi_util::IID_IAudioClient, CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&_pAudioClient));
+		HRESULT hr = _pDevice->Activate(__wasapi_util::GetIAudioClientInterfaceId(), CLSCTX_ALL, nullptr, reinterpret_cast<void**>(&_pAudioClient));
 		if (FAILED(hr))
 			return;
-
-		/*HRESULT render_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioRenderClient, reinterpret_cast<void**>(&_pAudioRenderClient));
-		/*HRESULT capture_hr =*/ _pAudioClient->GetService(__wasapi_util::IID_IAudioCaptureClient, reinterpret_cast<void**>(&_pAudioCaptureClient));
 	}
 
 	void _init_mix_format()
@@ -547,8 +564,8 @@ private:
 		__wasapi_util::AutoRelease EnumeratorRelease{ pEnumerator };
 
 		HRESULT hr = CoCreateInstance(
-			__wasapi_util::CLSID_MMDeviceEnumerator, nullptr,
-			CLSCTX_ALL, __wasapi_util::IID_IMMDeviceEnumerator,
+			__wasapi_util::GetMMDeviceEnumeratorClassId(), nullptr,
+			CLSCTX_ALL, __wasapi_util::GetIMMDeviceEnumeratorInterfaceId(),
 			reinterpret_cast<void**>(&pEnumerator));
 
 		if (FAILED(hr))
@@ -569,8 +586,8 @@ private:
 		IMMDeviceEnumerator* pEnumerator = nullptr;
 		__wasapi_util::AutoRelease EnumeratorRelease{ pEnumerator };
 		HRESULT hr = CoCreateInstance(
-			__wasapi_util::CLSID_MMDeviceEnumerator, nullptr,
-			CLSCTX_ALL, __wasapi_util::IID_IMMDeviceEnumerator,
+			__wasapi_util::GetMMDeviceEnumeratorClassId(), nullptr,
+			CLSCTX_ALL, __wasapi_util::GetIMMDeviceEnumeratorInterfaceId(),
 			reinterpret_cast<void**>(&pEnumerator));
 		if (FAILED(hr))
 			return {};
