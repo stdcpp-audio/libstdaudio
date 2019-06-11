@@ -9,12 +9,12 @@
 
 #include "iasiodrv.h"
 
-#include <string_view>
-#include <chrono>
 #include <cassert>
+#include <chrono>
 #include <forward_list>
-#include <vector>
 #include <functional>
+#include <string_view>
+#include <vector>
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -25,20 +25,17 @@ _LIBSTDAUDIO_NAMESPACE_BEGIN
 using __asio_common_sample_type = float;
 
 struct audio_device_exception : public runtime_error {
-  explicit audio_device_exception(const char* what)
-    : runtime_error(what) {
-  }
+  explicit audio_device_exception(const char* what) : runtime_error(what) {}
 };
 
-enum class audio_direction {in, out, full_duplex};
+enum class audio_direction { in, out, full_duplex };
 
 class audio_device final {
 public:
   using device_id_t = int;
 
   explicit audio_device(device_id_t id, string name, IASIO* asio, audio_direction direction)
-    : _name(name), _id(id), _asio(asio)
-  {
+    : _name(name), _id(id), _asio(asio) {
     prepare_asio(direction);
   }
 
@@ -109,7 +106,7 @@ public:
     return true;
   }
 
-  template <typename _SampleType>
+  template<typename _SampleType>
   constexpr bool supports_sample_type() const noexcept {
     return is_same_v<_SampleType, __asio_common_sample_type>;
   }
@@ -125,10 +122,10 @@ public:
   // TODO: remove std::function as soon as C++20 default-ctable lambda and lambda in unevaluated contexts become available
   using no_op_t = std::function<void(audio_device&)>;
 
-  template <typename _StartCallbackType = no_op_t,
-            typename _StopCallbackType = no_op_t,
-            // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
-            typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+  template<typename _StartCallbackType = no_op_t,
+           typename _StopCallbackType = no_op_t,
+           // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
+           typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
   bool start(_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
              _StopCallbackType&& stop_callback = [](audio_device&) noexcept {}) {
 
@@ -178,13 +175,12 @@ public:
     assert(false);
   }
 
-  template <typename _CallbackType>
+  template<typename _CallbackType>
   void process(_CallbackType&) {
     assert(false);
   }
 
-  template <typename _CallbackType,
-            typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>> >
+  template<typename _CallbackType, typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>>>
   void connect(_CallbackType callback) {
     if (_running) {
       throw audio_device_exception("cannot connect to running audio_device");
@@ -217,8 +213,8 @@ private:
     }
 
     switch (direction) {
-    case audio_direction::in: _num_outputs = 0; break;
-    case audio_direction::out: _num_inputs = 0; break;
+      case audio_direction::in: _num_outputs = 0; break;
+      case audio_direction::out: _num_inputs = 0; break;
     }
 
     long min;
@@ -231,9 +227,9 @@ private:
     }
 
     switch (granularity) {
-    default: set_buffers(min, max, granularity); break;
-    case -1: set_buffers_as_powers_of_two(min, max); break;
-    case 0: set_buffers_as_default_size_only(); break;
+      default: set_buffers(min, max, granularity); break;
+      case -1: set_buffers_as_powers_of_two(min, max); break;
+      case 0: set_buffers_as_default_size_only(); break;
     }
 
     set_buffer_size_frames(_buffer_size);
@@ -259,9 +255,8 @@ private:
     _buffer_sizes.push_back(_buffer_size);
   }
 
-  void query_sample_rates()
-  {
-    constexpr array<sample_rate_t, 6> common_sample_rates = { 44'100, 48'000, 88'200, 96'000, 176'400, 192'000 };
+  void query_sample_rates() {
+    constexpr array<sample_rate_t, 6> common_sample_rates = {44'100, 48'000, 88'200, 96'000, 176'400, 192'000};
 
     for (const auto sample_rate : common_sample_rates) {
       if (ASE_OK == _asio->canSampleRate(sample_rate)) {
@@ -276,10 +271,10 @@ private:
   void allocate_buffers() {
 
     for (int i = 0; i < _num_inputs; ++i) {
-      _asio_buffers.emplace_back(ASIOBufferInfo{ true, i });
+      _asio_buffers.emplace_back(ASIOBufferInfo{true, i});
     }
     for (int i = 0; i < _num_outputs; ++i) {
-      _asio_buffers.emplace_back(ASIOBufferInfo{ false, i });
+      _asio_buffers.emplace_back(ASIOBufferInfo{false, i});
     }
 
     const long num_channels = _num_inputs + _num_outputs;
@@ -305,20 +300,19 @@ private:
       return;
     }
 
-    switch (_sample_type)
-    {
-    case ASIOSTInt32LSB: _read = [this](long index) { read<int32_t>(index); }; break;
-    case ASIOSTInt24LSB: _read = [this](long index) { read<packed24_t>(index); }; break;
-    case ASIOSTInt16LSB: _read = [this](long index) { read<int16_t>(index); }; break;
-    case ASIOSTFloat32LSB: _read = [this](long index) { read<float>(index); }; break;
-    case ASIOSTFloat64LSB: _read = [this](long index) { read<double>(index); }; break;
+    switch (_sample_type) {
+      case ASIOSTInt32LSB: _read = [this](long index) { read<int32_t>(index); }; break;
+      case ASIOSTInt24LSB: _read = [this](long index) { read<packed24_t>(index); }; break;
+      case ASIOSTInt16LSB: _read = [this](long index) { read<int16_t>(index); }; break;
+      case ASIOSTFloat32LSB: _read = [this](long index) { read<float>(index); }; break;
+      case ASIOSTFloat64LSB: _read = [this](long index) { read<double>(index); }; break;
 
-    default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+      default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
   }
 
-  template <typename _SampleType>
-  void read (long index) {
+  template<typename _SampleType>
+  void read(long index) {
 
     auto& in = *_io.input_buffer;
     for (int channel = 0; channel < _num_inputs; ++channel) {
@@ -336,20 +330,19 @@ private:
       return;
     }
 
-    switch (_sample_type)
-    {
-    case ASIOSTInt32LSB: _write = [this](long index) { write<int32_t>(index); }; break;
-    case ASIOSTInt24LSB: _write = [this](long index) { write<packed24_t>(index); }; break;
-    case ASIOSTInt16LSB: _write = [this](long index) { write<int16_t>(index); }; break;
-    case ASIOSTFloat32LSB: _write = [this](long index) { write<float>(index); }; break;
-    case ASIOSTFloat64LSB: _write = [this](long index) { write<double>(index); }; break;
+    switch (_sample_type) {
+      case ASIOSTInt32LSB: _write = [this](long index) { write<int32_t>(index); }; break;
+      case ASIOSTInt24LSB: _write = [this](long index) { write<packed24_t>(index); }; break;
+      case ASIOSTInt16LSB: _write = [this](long index) { write<int16_t>(index); }; break;
+      case ASIOSTFloat32LSB: _write = [this](long index) { write<float>(index); }; break;
+      case ASIOSTFloat64LSB: _write = [this](long index) { write<double>(index); }; break;
 
-    default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+      default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
     }
   }
 
-  template <typename _SampleType>
-  void write (long index) {
+  template<typename _SampleType>
+  void write(long index) {
 
     auto& out = *_io.output_buffer;
     for (int channel = 0; channel < _num_outputs; ++channel) {
@@ -363,12 +356,11 @@ private:
   static void sample_rate_changed(ASIOSampleRate) {}
 
   static long asio_message(long selector, long, void*, double*) {
-    switch (selector)
-    {
-    case kAsioSupportsTimeInfo: return ASIOTrue;
-    case kAsioEngineVersion: return 2;
-    case kAsioSelectorSupported: return ASIOFalse;
-    default: return ASIOFalse;
+    switch (selector) {
+      case kAsioSupportsTimeInfo: return ASIOTrue;
+      case kAsioEngineVersion: return 2;
+      case kAsioSelectorSupported: return ASIOFalse;
+      default: return ASIOFalse;
     }
   }
 
@@ -385,7 +377,7 @@ private:
     _asio->outputReady();
   }
 
-  static ASIOTime* buffer_switch_time_info (ASIOTime* time, long index, ASIOBool) {
+  static ASIOTime* buffer_switch_time_info(ASIOTime* time, long index, ASIOBool) {
     return instance()->on_buffer_switch(time, index);
   }
 
@@ -437,11 +429,9 @@ private:
   }
 };
 
-class audio_device_list : public forward_list<audio_device> {
-};
+class audio_device_list : public forward_list<audio_device> {};
 
-class __reg_key_reader final
-{
+class __reg_key_reader final {
 public:
   __reg_key_reader(HKEY key, const string& subkey) {
     RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key);
@@ -458,7 +448,7 @@ public:
     char name[max_asio_name_length];
     vector<string> keys;
 
-    for (DWORD index = 0; ; ++index) {
+    for (DWORD index = 0;; ++index) {
       DWORD size{max_asio_name_length};
       const auto result = RegEnumKeyEx(_key, index, name, &size, nullptr, nullptr, nullptr, nullptr);
 
@@ -576,10 +566,10 @@ private:
 
   static bool is_required(const audio_device& device, const audio_direction direction) {
     switch (direction) {
-    case audio_direction::in: return device.is_input();
-    case audio_direction::out: return device.is_output();
-    case audio_direction::full_duplex: return device.is_input() && device.is_output();
-    default: return false;
+      case audio_direction::in: return device.is_input();
+      case audio_direction::out: return device.is_output();
+      case audio_direction::full_duplex: return device.is_input() && device.is_output();
+      default: return false;
     };
   }
 

@@ -1,0 +1,31 @@
+---
+
+BasedOnStyle: LLVM
+
+ColumnLimit: 100          # Arbitrary, feel free to adjust locally. 0 to ignore.
+PenaltyExcessCharacter: 1 # Softest limit on line length.
+ReflowComments: false     # Best we don't do this without a consistent length limit.
+
+AlwaysBreakTemplateDeclarations: true
+
+AllowShortFunctionsOnASingleLine: Empty
+
+SpaceAfterTemplateKeyword: false
+
+ConstructorInitializerIndentWidth: 2
+ContinuationIndentWidth: 2
+IndentWidth: 2
+
+AllowShortCaseLabelsOnASingleLine: true
+
+DerivePointerAlignment: true
+
+IndentCaseLabels: true
+
+BinPackArguments: false
+BinPackParameters: false
+
+---
+Language: Cpp
+
+...
