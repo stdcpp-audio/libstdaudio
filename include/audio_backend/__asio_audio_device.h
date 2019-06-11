@@ -397,15 +397,15 @@ private:
   CComPtr<IASIO> _asio;
   const string _name;
   device_id_t _id;
-  long _num_inputs = 0;
-  long _num_outputs = 0;
+  long _num_inputs{0};
+  long _num_outputs{0};
   vector<sample_rate_t> _sample_rates;
   vector<buffer_size_t> _buffer_sizes;
-  buffer_size_t _buffer_size = 0;
+  buffer_size_t _buffer_size{0};
   bool _running = false;
 
   ASIOSampleType _sample_type;
-  ASIOSamples _sample_position = 0;
+  ASIOSamples _sample_position{0};
 
   using __asio_callback_t = function<void(audio_device&, audio_device_io<float>&)>;
   __asio_callback_t _user_callback;
