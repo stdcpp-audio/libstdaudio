@@ -133,6 +133,8 @@ public:
 		_name(std::move(other._name)),
 		_MixFormat(other._MixFormat),
 		_ProcessingThread(std::move(other._ProcessingThread)),
+		_bufferFrameCount(other._bufferFrameCount),
+		_IsRenderDevice(other._IsRenderDevice),
 		_stop_callback(std::move(other._stop_callback)),
 		_user_callback(std::move(other._user_callback))
 	{
@@ -144,7 +146,7 @@ public:
 		other._MixFormat = nullptr;
 	}
 
-	audio_device& operator=(audio_device&& other)
+	audio_device& operator=(audio_device&& other) noexcept
 	{
 		if (this == &other)
 			return *this;
@@ -159,6 +161,8 @@ public:
 		_name = std::move(other._name);
 		_MixFormat = other._MixFormat;
 		_ProcessingThread = std::move(other._ProcessingThread);
+		_bufferFrameCount = other._bufferFrameCount;
+		_IsRenderDevice = other._IsRenderDevice;
 		_stop_callback = std::move(other._stop_callback);
 		_user_callback = std::move(other._user_callback);
 
@@ -204,22 +208,28 @@ public:
 
 	bool is_input() const noexcept
 	{
-		return _pAudioCaptureClient != nullptr;
+		return _IsRenderDevice == false;
 	}
 
 	bool is_output() const noexcept
 	{
-		return _pAudioRenderClient != nullptr;
+		return _IsRenderDevice == true;
 	}
 
 	int get_num_input_channels() const noexcept
 	{
-		return is_input() ? _MixFormat->nChannels : 0;
+		if (is_input() == false)
+			return 0;
+
+		return (_MixFormat != nullptr) ? _MixFormat->nChannels : 0;
 	}
 
 	int get_num_output_channels() const noexcept
 	{
-		return is_output() ? _MixFormat->nChannels : 0;
+		if (is_output() == false)
+			return 0;
+
+		return (_MixFormat != nullptr) ? _MixFormat->nChannels : 0;
 	}
 
 	using sample_rate_t = DWORD;
@@ -235,6 +245,9 @@ public:
 	// https://docs.microsoft.com/en-us/windows/desktop/CoreAudio/device-roles-for-legacy-windows-multimedia-applications
 	sample_rate_t get_sample_rate() const noexcept
 	{
+		if (_MixFormat == nullptr)
+			return 0;
+
 		return _MixFormat->nSamplesPerSec;
 	}
 
@@ -245,6 +258,9 @@ public:
 
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
+		if (_MixFormat == nullptr)
+			return false;
+
 		_MixFormat->nSamplesPerSec = new_sample_rate;
 		return true;
 	}
@@ -253,6 +269,9 @@ public:
 
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
+		if (_MixFormat == nullptr)
+			return 0;
+
 		return _MixFormat->nBlockAlign;
 	}
 
@@ -263,6 +282,9 @@ public:
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
+		if (_MixFormat == nullptr)
+			return false;
+
 		_MixFormat->nBlockAlign = new_buffer_size;
 		return true;
 	}
@@ -304,6 +326,9 @@ public:
 		typename = enable_if_t<is_nothrow_invocable_v<_StartCallbackType, audio_device&> && is_nothrow_invocable_v<_StopCallbackType, audio_device&>>>
 		bool start(_StartCallbackType&& start_callback, _StopCallbackType&& stop_callback)
 	{
+		if (_pAudioClient == nullptr)
+			return false;
+
 		if (!_running)
 		{
 			_hEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -328,6 +353,11 @@ public:
 			/*HRESULT render_hr =*/ _pAudioClient->GetService(__wasapi_util::GetIAudioRenderClientInterfaceId(), reinterpret_cast<void**>(&_pAudioRenderClient));
 			/*HRESULT capture_hr =*/ _pAudioClient->GetService(__wasapi_util::GetIAudioCaptureClientInterfaceId(), reinterpret_cast<void**>(&_pAudioCaptureClient));
 
+			// TODO: Make sure to clean up more gracefully from errors
+			hr = _pAudioClient->GetBufferSize(&_bufferFrameCount);
+			if (FAILED(hr))
+				return false;
+
 			hr = _pAudioClient->SetEventHandle(_hEvent);
 			if (FAILED(hr))
 				return false;
@@ -335,6 +365,8 @@ public:
 			hr = _pAudioClient->Start();
 			if (FAILED(hr))
 				return false;
+
+			_running = true;
 
 			if (_user_callback)
 			{
@@ -352,7 +384,6 @@ public:
 
 			start_callback(*this);
 			_stop_callback = stop_callback;
-			_running = true;
 		}
 
 		return true;
@@ -363,9 +394,12 @@ public:
 		if (_running)
 		{
 			_running = false;
-			_ProcessingThread.join();
 
-			_pAudioClient->Stop();
+			if (_ProcessingThread.joinable())
+				_ProcessingThread.join();
+
+			if (_pAudioClient != nullptr)
+				_pAudioClient->Stop();
 			if (_hEvent != nullptr)
 			{
 				CloseHandle(_hEvent);
@@ -390,23 +424,29 @@ public:
 		typename = enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
 	void process(_CallbackType& callback)
 	{
+		if (_pAudioClient == nullptr
+			|| _MixFormat == nullptr)
+			return;
+
 		if (is_output())
 		{
 			UINT32 CurrentPadding = 0;
 			_pAudioClient->GetCurrentPadding(&CurrentPadding);
-			if (CurrentPadding == 0)
+
+			auto NumFramesAvailable = _bufferFrameCount - CurrentPadding;
+			if (NumFramesAvailable == 0)
 				return;
 
 			BYTE* pData = nullptr;
-			_pAudioRenderClient->GetBuffer(CurrentPadding, &pData);
+			_pAudioRenderClient->GetBuffer(NumFramesAvailable, &pData);
 			if (pData == nullptr)
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), CurrentPadding, _MixFormat->nChannels, contiguous_interleaved };
+			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFramesAvailable, _MixFormat->nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
-			_pAudioRenderClient->ReleaseBuffer(CurrentPadding, 0);
+			_pAudioRenderClient->ReleaseBuffer(NumFramesAvailable, 0);
 		}
 		else if (is_input())
 		{
@@ -432,6 +472,9 @@ public:
 
 	bool has_unprocessed_io() const noexcept
 	{
+		if (_pAudioClient == nullptr)
+			return false;
+
 		UINT32 CurrentPadding = 0;
 		_pAudioClient->GetCurrentPadding(&CurrentPadding);
 		return CurrentPadding > 0;
@@ -440,8 +483,9 @@ public:
 private:
 	friend class __audio_device_enumerator;
 
-	audio_device(IMMDevice* pDevice) :
-		_pDevice(pDevice)
+	audio_device(IMMDevice* pDevice, bool bIsRenderDevice) :
+		_pDevice(pDevice),
+		_IsRenderDevice(bIsRenderDevice)
 	{
 		assert(_pDevice != nullptr);
 
@@ -450,11 +494,8 @@ private:
 		assert(!_name.empty());
 
 		_init_audio_client();
-		assert(_pAudioClient != nullptr);
-		// TODO: How can I tell whether this is an audio input device or an output device?
-		// I can't get these interfaces until I call Initialize(), but I don't want to do that
-		// until I'm ready to start...
-		//assert(_pAudioCaptureClient != nullptr || _pAudioRenderClient != nullptr);
+		if (_pAudioClient == nullptr)
+			return;
 
 		_init_mix_format();
 		assert(_MixFormat != nullptr);
@@ -509,8 +550,13 @@ private:
 	wstring _device_id;
 	atomic<bool> _running = false;
 	string _name;
-	WAVEFORMATEX* _MixFormat;
+
+	// TODO: Make this a WAVEFORMATEXTENSIBLE value type, then copy the mix format into this
+	// so that we have fewer error (and edge) cases.
+	WAVEFORMATEX* _MixFormat = nullptr;
 	thread _ProcessingThread;
+	UINT32 _bufferFrameCount = 0;
+	bool _IsRenderDevice = true;
 
 	using __stop_callback_t = function<void(audio_device&)>;
 	__stop_callback_t _stop_callback;
@@ -539,18 +585,12 @@ public:
 
 	static auto get_input_device_list()
 	{
-		return get_device_list([](const audio_device& d)
-		{
-			return d.is_input();
-		});
+		return get_device_list(false);
 	}
 
 	static auto get_output_device_list()
 	{
-		return get_device_list([](const audio_device& d)
-		{
-			return d.is_output();
-		});
+		return get_device_list(true);
 	}
 
 private:
@@ -576,10 +616,10 @@ private:
 		if (FAILED(hr))
 			return nullopt;
 
-		return audio_device{ pDevice };
+		return audio_device{ pDevice, bOutputDevice };
 	}
 
-	static vector<IMMDevice*> get_devices()
+	static vector<IMMDevice*> get_devices(bool bOutputDevices)
 	{
 		__wasapi_util::CCoInitialize ComInitializer;
 
@@ -595,7 +635,8 @@ private:
 		IMMDeviceCollection* pDeviceCollection = nullptr;
 		__wasapi_util::AutoRelease CollectionRelease{ pDeviceCollection };
 
-		hr = pEnumerator->EnumAudioEndpoints(eAll, DEVICE_STATEMASK_ALL, &pDeviceCollection);
+		EDataFlow SelectedDataFlow = bOutputDevices ? eRender : eCapture;
+		hr = pEnumerator->EnumAudioEndpoints(SelectedDataFlow, DEVICE_STATEMASK_ALL, &pDeviceCollection);
 		if (FAILED(hr))
 			return {};
 
@@ -625,16 +666,14 @@ private:
 		return Devices;
 	}
 
-	template <typename Condition>
-	static auto get_device_list(Condition condition)
+	static audio_device_list get_device_list(bool bOutputDevices)
 	{
+		__wasapi_util::CCoInitialize ComInitializer;
 		audio_device_list devices;
-		const auto mmdevices = get_devices();
+		const auto mmdevices = get_devices(bOutputDevices);
 
 		for (auto* mmdevice : mmdevices) {
-			auto device = audio_device{ mmdevice };
-			if (condition(device))
-				devices.push_front(move(device));
+			devices.push_front(audio_device{ mmdevice, bOutputDevices });
 		}
 
 		return devices;
