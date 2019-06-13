@@ -23,11 +23,6 @@ TEST_CASE("All devices have non-empty names")
   }
 }
 
-TEST_CASE("The device ID type is integral")
-{
-  CHECK(std::is_integral_v<audio_device::device_id_t>);
-}
-
 TEST_CASE("All input devices have unique IDs")
 {
   auto devices = get_audio_input_device_list();
