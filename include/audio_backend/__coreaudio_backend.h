@@ -138,15 +138,6 @@ public:
     return sample_rate;
   }
 
-  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
-    assert(!_supported_sample_rates.empty());
-    return {
-      _supported_sample_rates.data(),
-      static_cast<span<buffer_size_t>::index_type > (_supported_sample_rates.size())
-      // TODO: remove the cast when you move on to a std::span implementation using index_type = size_t!
-    };
-  }
-
   bool set_sample_rate(sample_rate_t new_sample_rate) {
     AudioObjectPropertyAddress pa = {
       kAudioDevicePropertyNominalSampleRate,
@@ -182,15 +173,6 @@ public:
       return {};
 
     return buffer_size_frames;
-  }
-
-  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
-    assert(!_supported_buffer_sizes.empty());
-    return {
-      _supported_buffer_sizes.data(),
-      static_cast<span<buffer_size_t>::index_type > (_supported_buffer_sizes.size())
-      // TODO: remove the cast when you move on to a std::span implementation using index_type = size_t!
-    };
   }
 
   bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
