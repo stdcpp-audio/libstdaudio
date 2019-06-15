@@ -30,8 +30,8 @@ int main() {
 
     auto& in = *io.input_buffer;
 
-    for (int frame = 0; frame < in.size_frames(); ++frame) {
-      for (int channel = 0; channel < in.size_channels(); ++channel) {
+    for (size_t frame = 0; frame < in.size_frames(); ++frame) {
+      for (size_t channel = 0; channel < in.size_channels(); ++channel) {
         const float abs_value = std::abs(in(frame, channel));
 
         if (abs_value > max_abs_value)
