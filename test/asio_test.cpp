@@ -376,10 +376,7 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports unique buffer size", "[asio]")
 {
   auto device = make_asio_device.with_unique_buffer_size(1024)();
 
-  auto buffer_sizes = device->get_supported_buffer_sizes_frames();
-
-  CHECK(buffer_sizes.size() == 1);
-  CHECK(buffer_sizes[0] == 1024);
+  // TODO: Use future API to query for allowed buffer sizes
   CHECK(device->get_buffer_size_frames() == 1024);
   CHECK(device->set_buffer_size_frames(1024));
   CHECK_FALSE(device->set_buffer_size_frames(64));
@@ -387,17 +384,14 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports unique buffer size", "[asio]")
 
 TEST_CASE_METHOD(asio_device_fixture, "Supports power-of-two buffer sizes", "[asio]")
 {
-  const std::array<buffer_size_t, 5> expected_buffer_sizes{64, 128, 256, 512, 1024};
-
   auto device = make_asio_device
     .with_power_of_two_buffer_sizes(64, 1024)
     .with_preferred_buffer_size(256)();
 
-  const auto buffer_sizes = device->get_supported_buffer_sizes_frames();
-  CHECK(buffer_sizes == span<const buffer_size_t>(expected_buffer_sizes));
+  // TODO: Use future API to query for allowed buffer sizes
   CHECK(device->get_buffer_size_frames() == 256);
 
-  for (const auto size : expected_buffer_sizes) {
+  for (const auto size : {64, 128, 256, 512, 1024}) {
     CHECK(device->set_buffer_size_frames(size));
     CHECK_FALSE(device->set_buffer_size_frames(size + 1));
     CHECK_FALSE(device->set_buffer_size_frames(size - 1));
@@ -407,17 +401,14 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports power-of-two buffer sizes", "[as
 
 TEST_CASE_METHOD(asio_device_fixture, "Supports buffer size ranges", "[asio]")
 {
-  const std::array<buffer_size_t, 4> expected_buffer_sizes{64, 128, 192, 256};
-
   auto device = make_asio_device
     .with_buffer_size_range(64, 256, 64)
     .with_preferred_buffer_size(192)();
 
-  const auto buffer_sizes = device->get_supported_buffer_sizes_frames();
-  CHECK(buffer_sizes == span<const buffer_size_t>(expected_buffer_sizes));
+  // TODO: Use future API to query for allowed buffer sizes
   CHECK(device->get_buffer_size_frames() == 192);
 
-  for (const auto size : expected_buffer_sizes) {
+  for (const auto size : {64, 128, 192, 256}) {
     CHECK(device->set_buffer_size_frames(size));
     CHECK_FALSE(device->set_buffer_size_frames(size + 1));
     CHECK_FALSE(device->set_buffer_size_frames(size - 1));
@@ -427,33 +418,12 @@ TEST_CASE_METHOD(asio_device_fixture, "Supports buffer size ranges", "[asio]")
 
 TEST_CASE_METHOD(asio_device_fixture, "Supports common samplerates", "[asio]")
 {
-  const std::array<sample_rate_t, 6>
-    expected_sample_rates{44'100, 48'000, 88'200, 96'000, 176'400, 192'000};
-
   auto device = make_asio_device();
 
-  const auto sample_rates = device->get_supported_sample_rates();
-  CHECK(sample_rates == span<const sample_rate_t>(expected_sample_rates));
-
-  for (const auto rate : expected_sample_rates) {
+  // TODO: Use future API to query for allowed sample rates
+  for (const auto rate : {44'100, 48'000, 88'200, 96'000, 176'400, 192'000}) {
     ALLOW_CALL(asio, setSampleRate(_)).RETURN(make_asio_device.is_supported_sample_rate(rate));
     CHECK(device->set_sample_rate(rate));
-  }
-}
-
-TEST_CASE_METHOD(asio_device_fixture, "Supports subset of common samplerates", "[asio]")
-{
-  const std::vector<sample_rate_t> expected_sample_rates{44'100, 48'000};
-
-  auto device = make_asio_device.with_sample_rates(expected_sample_rates)();
-
-  const auto sample_rates = device->get_supported_sample_rates();
-  CHECK(sample_rates == span<const sample_rate_t>(expected_sample_rates));
-
-  const std::array<sample_rate_t, 4> banned_sample_rates{88'200, 96'000, 176'400, 192'000};
-  for (const auto rate : banned_sample_rates) {
-    ALLOW_CALL(asio, setSampleRate(_)).RETURN(make_asio_device.is_supported_sample_rate(rate));
-    CHECK_FALSE(device->set_sample_rate(rate));
   }
 }
 

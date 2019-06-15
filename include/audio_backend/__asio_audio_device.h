@@ -81,10 +81,6 @@ public:
     return sample_rate;
   }
 
-  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
-    return _sample_rates;
-  }
-
   bool set_sample_rate(sample_rate_t sample_rate) {
     const auto result = _asio->setSampleRate(sample_rate);
     return result == ASE_OK;
@@ -94,10 +90,6 @@ public:
 
   buffer_size_t get_buffer_size_frames() const noexcept {
     return _buffer_size;
-  }
-
-  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
-    return _buffer_sizes;
   }
 
   bool set_buffer_size_frames(const buffer_size_t buffer_size) {
