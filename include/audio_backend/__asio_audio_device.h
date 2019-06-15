@@ -35,7 +35,7 @@ public:
   using device_id_t = int;
 
   explicit audio_device(device_id_t id, string name, IASIO* asio, audio_direction direction)
-    : _name(name), _id(id), _asio(asio) {
+    : _name(std::move(name)), _id(id), _asio(asio) {
     prepare_asio(direction);
   }
 
@@ -151,7 +151,6 @@ public:
   }
 
   bool stop() {
-    //TODO: fade out to prevent audio clicks on stop
     const auto result = _asio->stop();
     _running = false;
     return result == ASE_OK;
@@ -215,6 +214,7 @@ private:
     switch (direction) {
       case audio_direction::in: _num_outputs = 0; break;
       case audio_direction::out: _num_inputs = 0; break;
+      default: break;
     }
 
     long min;
@@ -281,7 +281,7 @@ private:
     const auto result = _asio->createBuffers(_asio_buffers.data(), num_channels, _buffer_size, &_asio_callbacks);
 
     if (result != ASE_OK) {
-      throw audio_device_exception("failed to create ASIO buffers: " + result);
+      throw audio_device_exception("failed to create ASIO buffers");
     }
 
     _input_samples.resize(_num_inputs * _buffer_size);
@@ -307,7 +307,7 @@ private:
       case ASIOSTFloat32LSB: _read = [this](long index) { read<float>(index); }; break;
       case ASIOSTFloat64LSB: _read = [this](long index) { read<double>(index); }; break;
 
-      default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+      default: throw audio_device_exception("ASIO native sample type not supported");
     }
   }
 
@@ -337,7 +337,7 @@ private:
       case ASIOSTFloat32LSB: _write = [this](long index) { write<float>(index); }; break;
       case ASIOSTFloat64LSB: _write = [this](long index) { write<double>(index); }; break;
 
-      default: throw audio_device_exception("ASIO native sample type not supported: " + _sample_type);
+      default: throw audio_device_exception("ASIO native sample type not supported");
     }
   }
 
@@ -404,7 +404,7 @@ private:
   buffer_size_t _buffer_size{0};
   bool _running = false;
 
-  ASIOSampleType _sample_type;
+  ASIOSampleType _sample_type{};
   ASIOSamples _sample_position{0};
 
   using __asio_callback_t = function<void(audio_device&, audio_device_io<__asio_common_sample_t>&)>;
@@ -418,7 +418,7 @@ private:
   fill_buffers _write;
 
   vector<ASIOBufferInfo> _asio_buffers;
-  ASIOCallbacks _asio_callbacks;
+  ASIOCallbacks _asio_callbacks{};
 
   static audio_device* instance(optional<audio_device*> new_device = {}) {
     static audio_device* device = nullptr;
@@ -477,7 +477,7 @@ public:
   }
 
 private:
-  HKEY _key{0};
+  HKEY _key{nullptr};
 };
 
 class __asio_devices {
@@ -549,7 +549,7 @@ private:
     CComPtr<IASIO> asio;
     const auto result = CoCreateInstance(class_id, nullptr, CLSCTX_INPROC_SERVER, class_id, reinterpret_cast<void**>(&asio));
     if (result) {
-      throw audio_device_exception("Failed to open ASIO driver: 0x" + result);
+      throw audio_device_exception("Failed to open ASIO driver");
     }
 
     if (!is_connected(asio)) {
@@ -570,7 +570,7 @@ private:
       case audio_direction::out: return device.is_output();
       case audio_direction::full_duplex: return device.is_input() && device.is_output();
       default: return false;
-    };
+    }
   }
 
   static bool is_excluded(string_view name) {
