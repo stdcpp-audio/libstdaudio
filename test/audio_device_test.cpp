@@ -23,11 +23,6 @@ TEST_CASE("All devices have non-empty names")
   }
 }
 
-TEST_CASE("The device ID type is integral")
-{
-  CHECK(std::is_integral_v<audio_device::device_id_t>);
-}
-
 TEST_CASE("All input devices have unique IDs")
 {
   auto devices = get_audio_input_device_list();
@@ -165,84 +160,14 @@ TEST_CASE("All output devices have a positive sample rate")
   }
 }
 
-TEST_CASE("All input devices must support at least one sample rate")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    auto sample_rates = device.get_supported_sample_rates();
-    CHECK_FALSE(sample_rates.empty());
-  }
-}
-
-TEST_CASE("All output devices must support at least one sample rate")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    auto sample_rates = device.get_supported_sample_rates();
-    CHECK_FALSE(sample_rates.empty());
-  }
-}
-
-TEST_CASE("All supported sample rates of all input devices must be positive")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    for (auto& sample_rate : device.get_supported_sample_rates()) {
-      CHECK(sample_rate > 0);
-    }
-  }
-}
-
-TEST_CASE("All supported sample rates of all output devices must be positive")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    for (auto& sample_rate : device.get_supported_sample_rates()) {
-      CHECK(sample_rate > 0);
-    }
-  }
-}
-
-TEST_CASE("All input devices must have a current sample rate which is one of the supported ones")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    auto sample_rate = device.get_sample_rate();
-    auto supported_sample_rates = device.get_supported_sample_rates();
-    auto find_result = std::find(supported_sample_rates.begin(), supported_sample_rates.end(), sample_rate);
-    CHECK (find_result != supported_sample_rates.end());
-  }
-}
-
-TEST_CASE("All output devices must have a current sample rate which is one of the supported ones")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    auto sample_rate = device.get_sample_rate();
-    auto supported_sample_rates = device.get_supported_sample_rates();
-    auto find_result = std::find(supported_sample_rates.begin(), supported_sample_rates.end(), sample_rate);
-    CHECK (find_result != supported_sample_rates.end());
-  }
-}
-
 TEST_CASE("Setting a supported sample rate on input devices")
 {
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    for (auto sample_rate : device.get_supported_sample_rates()) {
-      CHECK(device.set_sample_rate(sample_rate));
-    }
-  }
+  // TODO: this needs to wait until we have an API to query supported settings
 }
 
 TEST_CASE("Setting a supported sample rate on output devices")
 {
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    for (auto sample_rate : device.get_supported_sample_rates()) {
-      CHECK(device.set_sample_rate(sample_rate));
-    }
-  }
+  // TODO: this needs to wait until we have an API to query supported settings
 }
 
 TEST_CASE("Setting an unsupported sample rate on input devices")
@@ -282,84 +207,14 @@ TEST_CASE("All output devices have a positive buffer size")
   }
 }
 
-TEST_CASE("All input devices must support at least one buffer size")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    auto buffer_sizes = device.get_supported_buffer_sizes_frames();
-    CHECK_FALSE(buffer_sizes.empty());
-  }
-}
-
-TEST_CASE("All output devices must support at least one buffer size")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    auto buffer_sizes = device.get_supported_buffer_sizes_frames();
-    CHECK_FALSE(buffer_sizes.empty());
-  }
-}
-
-TEST_CASE("All supported buffer sizes of all input devices must be positive")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    for (auto buffer_size : device.get_supported_buffer_sizes_frames()) {
-      CHECK(buffer_size > 0);
-    }
-  }
-}
-
-TEST_CASE("All supported buffer sizes of all output devices must be positive")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    for (auto buffer_size : device.get_supported_buffer_sizes_frames()) {
-      CHECK(buffer_size > 0);
-    }
-  }
-}
-
-TEST_CASE("All input devices must have a current buffer size which is one of the supported ones")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    auto buffer_size = device.get_buffer_size_frames();
-    auto supported_buffer_sizes = device.get_supported_buffer_sizes_frames();
-    auto find_result = std::find(supported_buffer_sizes.begin(), supported_buffer_sizes.end(), buffer_size);
-    CHECK (find_result != supported_buffer_sizes.end());
-  }
-}
-
-TEST_CASE("All output devices must have a current buffer size which is one of the supported ones")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    auto buffer_size = device.get_buffer_size_frames();
-    auto supported_buffer_sizes = device.get_supported_buffer_sizes_frames();
-    auto find_result = std::find(supported_buffer_sizes.begin(), supported_buffer_sizes.end(), buffer_size);
-    CHECK (find_result != supported_buffer_sizes.end());
-  }
-}
-
 TEST_CASE("Setting a supported buffer size on input devices")
 {
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    for (auto buffer_size : device.get_supported_buffer_sizes_frames()) {
-      CHECK(device.set_buffer_size_frames(buffer_size));
-    }
-  }
+  // TODO: this needs to wait until we have an API to query supported settings
 }
 
 TEST_CASE("Setting a supported buffer size on output devices")
 {
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    for (auto buffer_size : device.get_supported_buffer_sizes_frames()) {
-      CHECK(device.set_buffer_size_frames(buffer_size));
-    }
-  }
+  // TODO: this needs to wait until we have an API to query supported settings
 }
 
 TEST_CASE("Setting an unsupported buffer size on input devices")
@@ -515,10 +370,9 @@ TEST_CASE("Repeatedly stopping an output device is not an error")
 }
 
 TEST_CASE("Starting an input device and registering a start callback") {
-  auto start_cb = [](audio_device&){};
-
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
     device.start(std::move(start_cb));
   }
 
@@ -526,10 +380,9 @@ TEST_CASE("Starting an input device and registering a start callback") {
 }
 
 TEST_CASE("Starting an output device and registering a start callback") {
-  auto start_cb = [](audio_device&){};
-
   auto devices = get_audio_output_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
     device.start(std::move(start_cb));
   }
 
@@ -537,11 +390,10 @@ TEST_CASE("Starting an output device and registering a start callback") {
 }
 
 TEST_CASE("Starting an input device and registering both a start and a stop callback") {
-  auto start_cb = [](audio_device&){};
-  auto stop_cb = [](audio_device&){};
-
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
+    auto stop_cb = [](audio_device&){};
     device.start(std::move(start_cb), std::move(stop_cb));
   }
 
@@ -550,11 +402,10 @@ TEST_CASE("Starting an input device and registering both a start and a stop call
 
 
 TEST_CASE("Starting an output device and registering both a start and a stop callback") {
-  auto start_cb = [](audio_device&){};
-  auto stop_cb = [](audio_device&){};
-
   auto devices = get_audio_output_device_list();
   for (auto& device : devices) {
+    auto start_cb = [](audio_device&){};
+    auto stop_cb = [](audio_device&){};
     device.start(std::move(start_cb), std::move(stop_cb));
   }
 
@@ -580,5 +431,17 @@ TEST_CASE("Stopping an output device that is not running must succeed")
 TEST_CASE("Register device list change callback")
 {
   auto cb = []{};
-  set_audio_device_list_callback(cb);
+  set_audio_device_list_callback(audio_device_list_event::device_list_changed, cb);
+}
+
+TEST_CASE("Register default input device change callback")
+{
+  auto cb = []{};
+  set_audio_device_list_callback(audio_device_list_event::default_input_device_changed, cb);
+}
+
+TEST_CASE("Register default output device change callback")
+{
+  auto cb = []{};
+  set_audio_device_list_callback(audio_device_list_event::default_output_device_changed, cb);
 }

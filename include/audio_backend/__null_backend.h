@@ -47,10 +47,6 @@ public:
     return {};
   }
 
-  span<const sample_rate_t> get_supported_sample_rates() const noexcept {
-    return {};
-  }
-
   bool set_sample_rate(sample_rate_t) {
     return false;
   }
@@ -58,10 +54,6 @@ public:
   using buffer_size_t  = int;
 
   buffer_size_t get_buffer_size_frames() const noexcept {
-    return {};
-  }
-
-  span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept {
     return {};
   }
 
