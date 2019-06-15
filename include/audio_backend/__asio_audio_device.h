@@ -317,7 +317,7 @@ private:
     auto& in = *_io.input_buffer;
     for (int channel = 0; channel < _num_inputs; ++channel) {
       const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[channel].buffers[index]);
-      for (int frame = 0; frame < in.size_frames(); ++frame) {
+      for (size_t frame = 0; frame < in.size_frames(); ++frame) {
         in(frame, channel) = buffer[frame].float_value();
       }
     }
@@ -347,7 +347,7 @@ private:
     auto& out = *_io.output_buffer;
     for (int channel = 0; channel < _num_outputs; ++channel) {
       const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
-      for (int frame = 0; frame < out.size_frames(); ++frame) {
+      for (size_t frame = 0; frame < out.size_frames(); ++frame) {
         buffer[frame] = {out(frame, channel)};
       }
     }

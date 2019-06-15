@@ -23,8 +23,8 @@ int main() {
 
       auto &out = *io.output_buffer;
 
-      for (int frame = 0; frame < out.size_frames(); ++frame)
-        for (int channel = 0; channel < out.size_channels(); ++channel)
+      for (size_t frame = 0; frame < out.size_frames(); ++frame)
+        for (size_t channel = 0; channel < out.size_channels(); ++channel)
           out(frame, channel) = white_noise(gen);
     });
 

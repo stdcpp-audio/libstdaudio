@@ -30,11 +30,11 @@ int main() {
 
     auto& out = *io.output_buffer;
 
-    for (int frame = 0; frame < out.size_frames(); ++frame) {
+    for (size_t frame = 0; frame < out.size_frames(); ++frame) {
       const float next_sample = std::sin(phase);
       phase = std::fmod(phase + delta, 2.0f * static_cast<float>(M_PI));
 
-      for (int channel = 0; channel < out.size_channels(); ++channel)
+      for (size_t channel = 0; channel < out.size_channels(); ++channel)
         out(frame, channel) = 0.2f * next_sample;
     }
   });

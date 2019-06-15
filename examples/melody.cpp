@@ -68,7 +68,7 @@ private:
   float _phase = 0;
   float _ms_counter = 0;
   float _note_duration_ms = 60'000.0f / bpm;
-  int _current_note_index = 0;
+  size_t _current_note_index = 0;
 };
 
 
@@ -88,10 +88,10 @@ int main() {
 
     auto& out = *io.output_buffer;
 
-    for (int frame = 0; frame < out.size_frames(); ++frame) {
+    for (size_t frame = 0; frame < out.size_frames(); ++frame) {
       auto next_sample = synth.get_next_sample();
 
-      for (int channel = 0; channel < out.size_channels(); ++channel)
+      for (size_t channel = 0; channel < out.size_channels(); ++channel)
         out(frame, channel) = next_sample;
     }
   });

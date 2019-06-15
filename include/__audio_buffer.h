@@ -32,7 +32,7 @@ public:
       _stride(_num_channels),
       _is_contiguous(true) {
     assert (num_channels <= _max_num_channels);
-    for (auto i = 0; i < _num_channels; ++i) {
+    for (index_type i = 0; i < _num_channels; ++i) {
       _channels[i] = data + i;
     }
   }
@@ -43,7 +43,7 @@ public:
         _stride(1),
         _is_contiguous(true) {
     assert (num_channels <= _max_num_channels);
-    for (auto i = 0; i < _num_channels; ++i) {
+    for (index_type i = 0; i < _num_channels; ++i) {
       _channels[i] = data + (i * _num_frames);
     }
   }
