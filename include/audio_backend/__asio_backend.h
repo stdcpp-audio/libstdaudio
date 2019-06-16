@@ -64,12 +64,10 @@ class alignas(1) __asio_sample<packed24_t> {
 public:
   static constexpr int32_t _scale = 0x7f'ffff;
   __asio_sample() = default;
-  explicit __asio_sample(const int32_t value)
-    : data{static_cast<int8_t>(value & 0xff),         // NOLINT(hicpp-signed-bitwise)
-           static_cast<int8_t>((value >> 8) & 0xff),  // NOLINT(hicpp-signed-bitwise)
-           static_cast<int8_t>((value >> 16) & 0xff)} // NOLINT(hicpp-signed-bitwise)
-  {}
-  explicit __asio_sample(const float value) : __asio_sample{static_cast<int32_t>(value * _scale)} {}
+  explicit __asio_sample(const uint32_t value)
+    : data{static_cast<int8_t>(value & 0xffu), static_cast<int8_t>((value >> 8u) & 0xffu), static_cast<int8_t>((value >> 16u) & 0xffu)} {
+  }
+  explicit __asio_sample(const float value) : __asio_sample{static_cast<uint32_t>(value * _scale)} {}
 
   int32_t int_value() const {
     return ((data[2] << 24) >> 8) | ((data[1] << 8) & 0xff00) | (data[0] & 0xff); // NOLINT(hicpp-signed-bitwise)

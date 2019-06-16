@@ -51,14 +51,14 @@ TEST_CASE("Converts integer samples to floating point samples", "[asio]") {
   }
 
   SECTION("Converts from 24-bit samples") {
-    CHECK(__asio_sample<packed24_t>(0).float_value() == 0.f);
-    CHECK(__asio_sample<packed24_t>(0x7f'ffff).float_value() == 1.f);
-    CHECK(__asio_sample<packed24_t>(-0x7f'ffff).float_value() == -1.f);
+    CHECK(__asio_sample<packed24_t>(0u).float_value() == 0.f);
+    CHECK(__asio_sample<packed24_t>(0x7f'ffffu).float_value() == 1.f);
+    CHECK(__asio_sample<packed24_t>(static_cast<uint32_t>(-0x7f'ffff)).float_value() == -1.f);
 
-    const auto half = __asio_sample<packed24_t>(0x7f'ffff / 2).float_value();
+    const auto half = __asio_sample<packed24_t>(0x7f'ffffu / 2).float_value();
     CHECK(Approx(half) == 0.5f);
 
-    const auto minus_half = __asio_sample<packed24_t>(-0x7f'ffff / 2).float_value();
+    const auto minus_half = __asio_sample<packed24_t>(static_cast<uint32_t>(-0x7f'ffff)/ 2).float_value();
     CHECK(Approx(minus_half) == -0.5f);
   }
 
