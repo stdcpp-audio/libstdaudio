@@ -379,7 +379,7 @@ private:
     _user_callback(*this, _io);
     _write(index);
 
-    time->timeInfo.flags = kSystemTimeValid | kSamplePositionValid;
+    time->timeInfo.flags = kSystemTimeValid | kSamplePositionValid; // NOLINT(hicpp-signed-bitwise)
     time->timeInfo.samplePosition = _sample_position;
     _sample_position += _buffer_size;
     time->timeInfo.systemTime = timeGetTime() * 1'000'000;
@@ -426,7 +426,7 @@ class audio_device_list : public forward_list<audio_device> {};
 class __reg_key_reader final {
 public:
   __reg_key_reader(HKEY key, const string& subkey) {
-    RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key);
+    RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key); // NOLINT(hicpp-signed-bitwise)
   }
 
   ~__reg_key_reader() {

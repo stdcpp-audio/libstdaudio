@@ -94,8 +94,8 @@ class mock_asio : public trompeloeil::mock_interface<IASIO>
 {
 public:
   long __stdcall QueryInterface(const IID&, void**) override {return 0;}
-  unsigned long __stdcall AddRef() {return 1;}
-  unsigned long __stdcall Release() {return 0;}
+  unsigned long __stdcall AddRef() override {return 1;}
+  unsigned long __stdcall Release() override {return 0;}
   IMPLEMENT_MOCK1(init);
   IMPLEMENT_MOCK1(getDriverName);
   IMPLEMENT_MOCK0(getDriverVersion);
@@ -122,7 +122,7 @@ public:
 class asio_device_builder
 {
 public:
-  asio_device_builder(mock_asio& asio) : asio(asio)
+  explicit asio_device_builder(mock_asio& asio) : asio(asio)
   {}
 
   using audio_device_ptr = std::unique_ptr<audio_device, std::function<void(audio_device*)>>;
@@ -224,7 +224,7 @@ public:
   }
 
   asio_device_builder& with_sample_rates(std::vector<sample_rate_t> new_sample_rates) {
-    sample_rates = new_sample_rates;
+    sample_rates = std::move(new_sample_rates);
     return *this;
   }
 
@@ -267,11 +267,11 @@ public:
 
   void allocate_buffers(const uint32_t num_channels, const uint32_t num_frames) {
     buffer.resize(2 * num_channels * num_frames);
-    auto p = buffer.data();
+    auto data = buffer.data();
     for (uint32_t c = 0; c < num_channels; ++c) {
-      for (uint32_t i = 0; i < 2; ++i) {
-        asio_buffers[c].buffers[i] = p;
-        p += num_frames;
+      for (auto & asio_buffer : asio_buffers[c].buffers) {
+        asio_buffer = data;
+        data += num_frames;
       }
     }
   }
