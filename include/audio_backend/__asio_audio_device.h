@@ -5,15 +5,15 @@
 
 #pragma once
 
-#include "__asio_sample.h"
-
 #define NOMINMAX
 #include "iasiodrv.h"
 
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <forward_list>
 #include <functional>
+#include <numeric>
 #include <string_view>
 #include <vector>
 
@@ -27,6 +27,60 @@ using __asio_common_sample_t = float;
 
 struct audio_device_exception : public runtime_error {
   explicit audio_device_exception(const char* what) : runtime_error(what) {}
+};
+
+template<class _SampleType>
+class __asio_sample {
+public:
+  __asio_sample() = default;
+  explicit __asio_sample(_SampleType value) : _value{value} {}
+
+  template<class _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
+  explicit __asio_sample(float value)
+    : __asio_sample(static_cast<_SampleType>(value * static_cast<double>(numeric_limits<_SampleType>::max()))) {}
+
+  int32_t int_value() const {
+    return _value;
+  }
+
+  template<class _IntegralType = _SampleType, enable_if_t<is_integral<_IntegralType>::value, int> = 0>
+  float float_value() const {
+    return static_cast<float>(_value) / numeric_limits<_SampleType>::max();
+  }
+
+  template<class _FloatType = _SampleType, enable_if_t<is_floating_point<_FloatType>::value, int> = 0>
+  float float_value() const {
+    return static_cast<float>(_value);
+  }
+
+private:
+  _SampleType _value;
+};
+
+struct packed24_t {};
+
+template<>
+class alignas(1) __asio_sample<packed24_t> {
+public:
+  static constexpr int32_t _scale = 0x7f'ffff;
+  __asio_sample() = default;
+  explicit __asio_sample(const int32_t value)
+    : data{static_cast<int8_t>(value & 0xff),         // NOLINT(hicpp-signed-bitwise)
+           static_cast<int8_t>((value >> 8) & 0xff),  // NOLINT(hicpp-signed-bitwise)
+           static_cast<int8_t>((value >> 16) & 0xff)} // NOLINT(hicpp-signed-bitwise)
+  {}
+  explicit __asio_sample(const float value) : __asio_sample{static_cast<int32_t>(value * _scale)} {}
+
+  int32_t int_value() const {
+    return ((data[2] << 24) >> 8) | ((data[1] << 8) & 0xff00) | (data[0] & 0xff); // NOLINT(hicpp-signed-bitwise)
+  }
+
+  float float_value() const {
+    return static_cast<float>(int_value()) / _scale;
+  }
+
+private:
+  array<int8_t, 3> data;
 };
 
 enum class audio_direction { in, out, full_duplex };
