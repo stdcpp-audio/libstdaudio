@@ -18,7 +18,7 @@
 #ifdef __APPLE__
   #include <audio_backend/__coreaudio_backend.h>
 #elif defined _WIN32
-  #include <audio_backend/__asio_backend.h>
+  #include <audio_backend/__asio_audio_device.h>
 #else
   #include <audio_backend/__null_backend.h>
 #endif // __APPLE__

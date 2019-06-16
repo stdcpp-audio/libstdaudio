@@ -605,4 +605,29 @@ private:
   mutable int _index{0};
 };
 
+optional<audio_device> get_default_audio_input_device() {
+  auto& devices = __asio_devices::get();
+  return devices.default_input();
+}
+
+optional<audio_device> get_default_audio_output_device() {
+  auto& devices = __asio_devices::get();
+  return devices.default_output();
+}
+
+audio_device_list get_audio_input_device_list() {
+  auto& devices = __asio_devices::get();
+  return devices.inputs();
+}
+
+audio_device_list get_audio_output_device_list() {
+  auto& devices = __asio_devices::get();
+  return devices.outputs();
+}
+
+template<class F, class /* = enable_if_t<is_nothrow_invocable_v<F>> */>
+void set_audio_device_list_callback(audio_device_list_event, F&&) {
+  // TODO: Implement this.
+}
+
 _LIBSTDAUDIO_NAMESPACE_END
