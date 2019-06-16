@@ -250,9 +250,7 @@ private:
   }
 
   void query_sample_rates() {
-    constexpr array<sample_rate_t, 6> common_sample_rates = {44'100, 48'000, 88'200, 96'000, 176'400, 192'000};
-
-    for (const auto sample_rate : common_sample_rates) {
+    for (const auto sample_rate : {44'100, 48'000, 88'200, 96'000, 176'400, 192'000}) {
       if (ASE_OK == _asio->canSampleRate(sample_rate)) {
         _sample_rates.push_back(sample_rate);
       }
@@ -545,11 +543,9 @@ private:
     if (result) {
       throw audio_device_exception("Failed to open ASIO driver");
     }
-
     if (!is_connected(asio)) {
       return {};
     }
-
     const auto device = audio_device(_index++, name, asio, direction);
     if (!is_required(device, direction)) {
       return {};
