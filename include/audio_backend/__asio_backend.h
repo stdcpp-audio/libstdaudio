@@ -29,11 +29,9 @@ audio_device_list get_audio_output_device_list() {
   return devices.outputs();
 }
 
-template <typename F, typename /* = enable_if_t<is_nothrow_invocable_v<F>> */ >
-void set_audio_device_list_callback(audio_device_list_event, F&& cb) {
+template<class F, class /* = enable_if_t<is_nothrow_invocable_v<F>> */>
+void set_audio_device_list_callback(audio_device_list_event, F&&) {
   // TODO: Implement this.
-  // For now, swallow the callback function to keep the compiler happy
-  function <void()>(move(cb));
 }
 
 _LIBSTDAUDIO_NAMESPACE_END

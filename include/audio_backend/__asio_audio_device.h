@@ -18,7 +18,6 @@
 #include <vector>
 
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
 #include <Windows.h>
 #include <atlbase.h>
 
@@ -169,13 +168,11 @@ public:
       throw audio_device_exception("cannot connect to running audio_device");
     }
     _user_callback = move(callback);
-
     allocate_buffers();
   }
 
 private:
   void prepare_asio(const audio_direction direction) {
-
     set_callbacks();
     query_io(direction);
     query_sample_rates();
@@ -190,32 +187,26 @@ private:
 
   void query_io(const audio_direction direction) {
     auto result = _asio->getChannels(&_num_inputs, &_num_outputs);
-
     if (result != ASE_OK) {
       return;
     }
-
     switch (direction) {
       case audio_direction::in: _num_outputs = 0; break;
       case audio_direction::out: _num_inputs = 0; break;
       default: break;
     }
-
     long min;
     long max;
     long granularity;
     result = _asio->getBufferSize(&min, &max, &_buffer_size, &granularity);
-
     if (result != ASE_OK) {
       return;
     }
-
     switch (granularity) {
       default: set_buffers(min, max, granularity); break;
       case -1: set_buffers_as_powers_of_two(min, max); break;
       case 0: set_buffers_as_default_size_only(); break;
     }
-
     set_buffer_size_frames(_buffer_size);
 
     ASIOChannelInfo info{0, is_input()};
@@ -251,7 +242,6 @@ private:
   }
 
   void allocate_buffers() {
-
     for (int i = 0; i < _num_inputs; ++i) {
       _asio_buffers.emplace_back(ASIOBufferInfo{true, i});
     }
@@ -325,12 +315,12 @@ private:
 
   template<class _SampleType>
   void write(long index) {
-
+    using sample = __asio_sample<_SampleType>;
     auto& out = *_io.output_buffer;
     for (int channel = 0; channel < _num_outputs; ++channel) {
-      const auto buffer = static_cast<__asio_sample<_SampleType>*>(_asio_buffers[_num_inputs + channel].buffers[index]);
+      const auto buffer = static_cast<sample*>(_asio_buffers[_num_inputs + channel].buffers[index]);
       for (size_t frame = 0; frame < out.size_frames(); ++frame) {
-        buffer[frame] = __asio_sample<_SampleType>(out(frame, channel));
+        buffer[frame] = sample(out(frame, channel));
       }
     }
   }
@@ -351,7 +341,6 @@ private:
   }
 
   void on_buffer_switch(long index) {
-
     _read(index);
     _user_callback(*this, _io);
     _write(index);
@@ -364,7 +353,6 @@ private:
   }
 
   ASIOTime* on_buffer_switch(ASIOTime* time, long index) {
-
     _read(index);
     _user_callback(*this, _io);
     _write(index);
@@ -413,13 +401,13 @@ private:
 
 class audio_device_list : public forward_list<audio_device> {};
 
-class __reg_key_reader final {
+class __reg_key final {
 public:
-  __reg_key_reader(HKEY key, const string& subkey) {
+  __reg_key(HKEY key, const string& subkey) {
     RegOpenKeyExA(key, subkey.c_str(), 0, KEY_READ, &_key); // NOLINT(hicpp-signed-bitwise)
   }
 
-  ~__reg_key_reader() {
+  ~__reg_key() {
     if (_key) {
       RegCloseKey(_key);
     }
@@ -433,25 +421,21 @@ public:
     for (DWORD index = 0;; ++index) {
       DWORD size{max_asio_name_length};
       const auto result = RegEnumKeyEx(_key, index, name, &size, nullptr, nullptr, nullptr, nullptr);
-
       if (result != ERROR_SUCCESS) {
         break;
       }
-
       keys.emplace_back(name);
     }
-
     return keys;
   }
 
-  __reg_key_reader subkey(const string& name) const {
+  __reg_key subkey(const string& name) const {
     return {_key, name};
   }
 
   string value(const char* name) const {
     DWORD size{0};
     RegQueryValueExA(_key, name, nullptr, nullptr, nullptr, &size);
-
     string value(size + 1, 0);
     RegQueryValueExA(_key, name, nullptr, nullptr, reinterpret_cast<LPBYTE>(value.data()), &size);
 
@@ -507,9 +491,7 @@ private:
     _index = 0;
 
     for (const auto& name : _asio_reg.subkeys()) {
-
       auto device = open_device(name, direction);
-
       if (device) {
         devices.push_front(move(*device));
       }
@@ -518,7 +500,6 @@ private:
   }
 
   optional<audio_device> open_device(const string& name, const audio_direction direction) const {
-
     if (is_excluded(name)) {
       return {};
     }
@@ -540,7 +521,6 @@ private:
     if (!is_required(device, direction)) {
       return {};
     }
-
     return device;
   }
 
@@ -567,7 +547,7 @@ private:
     return ASIOTrue == asio->init(nullptr);
   }
 
-  __reg_key_reader _asio_reg{HKEY_LOCAL_MACHINE, R"(software\asio)"};
+  __reg_key _asio_reg{HKEY_LOCAL_MACHINE, R"(software\asio)"};
   mutable int _index{0};
 };
 
