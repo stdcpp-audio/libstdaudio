@@ -33,20 +33,6 @@ public:
     return false;
   }
 
-  template <typename T, typename =  enable_if_t<is_unsigned_v<T>>>
-  constexpr static T next_power_of_2(T n) noexcept {
-    T count = 0;
-    if (n && !(n & (n - 1)))
-      return n;
-
-    while (n != 0) {
-      n >>= 1;
-      count += 1;
-    }
-
-    return 1 << count;
-  }
-
 private:
   static string _format_error(OSStatus error)
   {
@@ -177,7 +163,7 @@ public:
 
   bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
     // TODO: for some reason, the call below succeeds even for nonsensical buffer sizes, so we need to catch this  manually:
-    if (find(_supported_buffer_sizes.begin(), _supported_buffer_sizes.end(), new_buffer_size) == _supported_buffer_sizes.end())
+    if (new_buffer_size < _min_supported_buffer_size || new_buffer_size > _max_supported_buffer_size)
       return false;
 
     AudioObjectPropertyAddress pa = {
@@ -398,12 +384,8 @@ private:
       return;
     }
 
-    const auto min_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMinimum);
-    const auto max_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMaximum);
-
-    for (buffer_size_t buffer_size = __coreaudio_util::next_power_of_2(min_buffer_size); buffer_size <= max_buffer_size; buffer_size *= 2) {
-      _supported_buffer_sizes.push_back(buffer_size);
-    }
+    _min_supported_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMinimum);
+    _max_supported_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMaximum);
   }
 
   AudioObjectID _device_id = {};
@@ -411,8 +393,9 @@ private:
   bool _running = false;
   string _name = {};
   __coreaudio_stream_config _config;
-  vector<sample_rate_t> _supported_sample_rates;
-  vector<buffer_size_t> _supported_buffer_sizes;
+  vector<sample_rate_t> _supported_sample_rates = {};
+  buffer_size_t _min_supported_buffer_size = 0;
+  buffer_size_t _max_supported_buffer_size = 0;
 
   using __coreaudio_callback_t = function<void(audio_device&, audio_device_io<__coreaudio_native_sample_type>&)>;
   __coreaudio_callback_t _user_callback;
