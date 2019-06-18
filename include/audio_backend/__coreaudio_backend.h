@@ -386,6 +386,11 @@ private:
 
     _min_supported_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMinimum);
     _max_supported_buffer_size = static_cast<buffer_size_t>(buffer_size_range.mMaximum);
+
+    // ensure that the supported buffer size range obtained from CoreAudio makes sense:
+    // TODO: do this using proper error handling/reporting instead of asserts
+    assert(_min_supported_buffer_size > 0);
+    assert(_max_supported_buffer_size >= _min_supported_buffer_size);
   }
 
   AudioObjectID _device_id = {};
