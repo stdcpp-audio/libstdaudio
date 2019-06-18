@@ -28,7 +28,7 @@ void print_device_info(const audio_device& d) {
   std::cout << "buffer size = " << d.get_buffer_size_frames() << " frames, ";
   std::cout << (d.is_input() ? d.get_num_input_channels() : d.get_num_output_channels()) << " channels";
   std::cout << (is_default_device(d) ? " [DEFAULT DEVICE]\n" : "\n");
-};
+}
 
 void print_device_list(const audio_device_list& list) {
   for (auto& item : list) {

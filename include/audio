@@ -7,10 +7,6 @@
 
 #include <optional>
 
-// TODO: this is a temporary measure until std::span becomes available
-#include "cpp/span.hpp"
-using namespace TCB_SPAN_NAMESPACE_NAME;
-
 #define _LIBSTDAUDIO_NAMESPACE std::experimental
 
 #define _LIBSTDAUDIO_NAMESPACE_BEGIN namespace _LIBSTDAUDIO_NAMESPACE {
@@ -21,6 +17,8 @@ using namespace TCB_SPAN_NAMESPACE_NAME;
 
 #ifdef __APPLE__
   #include <audio_backend/__coreaudio_backend.h>
+#elif defined _WIN32
+  #include <audio_backend/__asio_backend.h>
 #else
   #include <audio_backend/__null_backend.h>
 #endif // __APPLE__

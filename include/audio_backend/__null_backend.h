@@ -7,6 +7,7 @@
 
 #include <string_view>
 #include <chrono>
+#include <cassert>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -40,7 +41,7 @@ public:
     return 0;
   }
 
-  using sample_rate_t = unsigned;
+  using sample_rate_t = int;
 
   sample_rate_t get_sample_rate() const noexcept {
     return {};
@@ -50,13 +51,13 @@ public:
     return false;
   }
 
-  using buffer_size_t  = unsigned;
+  using buffer_size_t  = int;
 
   buffer_size_t get_buffer_size_frames() const noexcept {
     return {};
   }
 
-  bool set_buffer_size_frames(buffer_size_t new_buffer_size) {
+  bool set_buffer_size_frames(buffer_size_t) {
     return false;
   }
 
@@ -94,6 +95,11 @@ public:
     assert(false);
   }
 
+  template <typename _CallbackType>
+  void connect(_CallbackType) {
+    assert(false);
+  }
+
   constexpr bool has_unprocessed_io() const noexcept {
     return false;
   }
@@ -116,6 +122,8 @@ private:
 public:
   auto begin() -> iterator { return {}; }
   auto end() -> iterator { return {}; }
+  auto begin() const -> iterator { return {}; }
+  auto end() const -> iterator { return {}; }
   auto empty() -> bool { return true; }
 };
 

@@ -7,10 +7,19 @@ cmake_minimum_required(VERSION 3.12)
 project(libstdaudio)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+
+if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /WX")
+else ()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+endif ()
 
 if (APPLE)
     set(CMAKE_EXE_LINKER_FLAGS "-framework CoreAudio")
+endif ()
+
+if (MSVC)
+    set(CMAKE_EXE_LINKER_FLAGS "winmm.lib")
 endif ()
 
 include_directories(include)
@@ -25,3 +34,9 @@ add_executable(test
         test/test_main.cpp
         test/audio_buffer_test.cpp
         test/audio_device_test.cpp)
+
+if (MSVC)
+add_executable(test_asio
+        test/test_main.cpp
+        test/asio_test.cpp)
+endif ()
