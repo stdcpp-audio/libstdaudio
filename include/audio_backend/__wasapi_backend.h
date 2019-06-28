@@ -144,7 +144,6 @@ public:
 		other._pAudioCaptureClient = nullptr;
 		other._pAudioRenderClient = nullptr;
 		other._hEvent = nullptr;
-		other._MixFormat = nullptr;
 	}
 
 	audio_device& operator=(audio_device&& other) noexcept
@@ -172,15 +171,11 @@ public:
 		other._pAudioCaptureClient = nullptr;
 		other._pAudioRenderClient = nullptr;
 		other._hEvent = nullptr;
-		other._MixFormat = nullptr;
 	}
 
 	~audio_device()
 	{
 		stop();
-
-		if (_MixFormat != nullptr)
-			CoTaskMemFree(_MixFormat);
 
 		if (_pAudioCaptureClient != nullptr)
 			_pAudioCaptureClient->Release();
@@ -222,7 +217,7 @@ public:
 		if (is_input() == false)
 			return 0;
 
-		return (_MixFormat != nullptr) ? _MixFormat->nChannels : 0;
+		return _MixFormat.Format.nChannels;
 	}
 
 	int get_num_output_channels() const noexcept
@@ -230,25 +225,19 @@ public:
 		if (is_output() == false)
 			return 0;
 
-		return (_MixFormat != nullptr) ? _MixFormat->nChannels : 0;
+		return _MixFormat.Format.nChannels;
 	}
 
 	using sample_rate_t = DWORD;
 
 	sample_rate_t get_sample_rate() const noexcept
 	{
-		if (_MixFormat == nullptr)
-			return 0;
-
-		return _MixFormat->nSamplesPerSec;
+		return _MixFormat.Format.nSamplesPerSec;
 	}
 
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
-		if (_MixFormat == nullptr)
-			return false;
-
-		_MixFormat->nSamplesPerSec = new_sample_rate;
+		_MixFormat.Format.nSamplesPerSec = new_sample_rate;
 		return true;
 	}
 
@@ -256,18 +245,12 @@ public:
 
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
-		if (_MixFormat == nullptr)
-			return 0;
-
-		return _MixFormat->nBlockAlign;
+		return _MixFormat.Format.nBlockAlign;
 	}
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
-		if (_MixFormat == nullptr)
-			return false;
-
-		_MixFormat->nBlockAlign = new_buffer_size;
+		_MixFormat.Format.nBlockAlign = new_buffer_size;
 		return true;
 	}
 
@@ -318,13 +301,15 @@ public:
 				return false;
 
 			REFERENCE_TIME periodicity = 0;
-			REFERENCE_TIME buffer_duration = 10000000;
+
+			// TODO: We need to expose this buffer duration to the API
+			REFERENCE_TIME buffer_duration = 100'000;
 			HRESULT hr = _pAudioClient->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
 				buffer_duration,
 				periodicity,
-				_MixFormat,
+				&_MixFormat.Format,
 				nullptr);
 
 			// TODO: Deal with AUDCLNT_E_BUFFER_SIZE_NOT_ALIGNED return code by resetting the buffer_duration and retrying:
@@ -406,8 +391,7 @@ public:
 		typename = enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
 	void process(_CallbackType& callback)
 	{
-		if (_pAudioClient == nullptr
-			|| _MixFormat == nullptr)
+		if (_pAudioClient == nullptr)
 			return;
 
 		if (is_output())
@@ -425,7 +409,7 @@ public:
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFramesAvailable, _MixFormat->nChannels, contiguous_interleaved };
+			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFramesAvailable, _MixFormat.Format.nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
 			_pAudioRenderClient->ReleaseBuffer(NumFramesAvailable, 0);
@@ -445,7 +429,7 @@ public:
 				return;
 
 			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFrames, _MixFormat->nChannels, contiguous_interleaved };
+			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFrames, _MixFormat.Format.nChannels, contiguous_interleaved };
 			callback(*this, device_io);
 
 			_pAudioCaptureClient->ReleaseBuffer(NumFrames);
@@ -470,6 +454,7 @@ private:
 		_pDevice(pDevice),
 		_IsRenderDevice(bIsRenderDevice)
 	{
+		// TODO: Handle errors better.  Maybe by throwing exceptions?
 		assert(_pDevice != nullptr);
 
 		_init_device_id_and_name();
@@ -481,7 +466,6 @@ private:
 			return;
 
 		_init_mix_format();
-		assert(_MixFormat != nullptr);
 	}
 
 	void _init_device_id_and_name()
@@ -522,7 +506,15 @@ private:
 
 	void _init_mix_format()
 	{
-		/*HRESULT hr =*/ _pAudioClient->GetMixFormat(&_MixFormat);
+		WAVEFORMATEX* _DeviceMixFormat;
+		HRESULT hr = _pAudioClient->GetMixFormat(&_DeviceMixFormat);
+		if (FAILED(hr))
+			return;
+
+		auto* _DeviceMixFormatEx = reinterpret_cast<WAVEFORMATEXTENSIBLE*>(_DeviceMixFormat);
+		_MixFormat = *_DeviceMixFormatEx;
+
+		CoTaskMemFree(_DeviceMixFormatEx);
 	}
 
 	IMMDevice* _pDevice = nullptr;
@@ -534,9 +526,7 @@ private:
 	atomic<bool> _running = false;
 	string _name;
 
-	// TODO: Make this a WAVEFORMATEXTENSIBLE value type, then copy the mix format into this
-	// so that we have fewer error (and edge) cases.
-	WAVEFORMATEX* _MixFormat = nullptr;
+	WAVEFORMATEXTENSIBLE _MixFormat;
 	thread _ProcessingThread;
 	UINT32 _bufferFrameCount = 0;
 	bool _IsRenderDevice = true;
@@ -619,7 +609,7 @@ private:
 		__wasapi_util::AutoRelease CollectionRelease{ pDeviceCollection };
 
 		EDataFlow SelectedDataFlow = bOutputDevices ? eRender : eCapture;
-		hr = pEnumerator->EnumAudioEndpoints(SelectedDataFlow, DEVICE_STATEMASK_ALL, &pDeviceCollection);
+		hr = pEnumerator->EnumAudioEndpoints(SelectedDataFlow, DEVICE_STATE_ACTIVE, &pDeviceCollection);
 		if (FAILED(hr))
 			return {};
 
@@ -686,6 +676,6 @@ audio_device_list get_audio_output_device_list()
 template <typename F, typename /*= enable_if_t<std::is_invocable_v<F>>*/>
 void set_audio_device_list_callback(audio_device_list_event, F&&)
 {
-
+	// TODO: Implement me!
 }
 _LIBSTDAUDIO_NAMESPACE_END
