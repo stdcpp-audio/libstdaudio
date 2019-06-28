@@ -170,24 +170,6 @@ TEST_CASE("Setting a supported sample rate on output devices")
   // TODO: this needs to wait until we have an API to query supported settings
 }
 
-#ifndef _WIN32
-TEST_CASE("Setting an unsupported sample rate on input devices")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    CHECK_FALSE(device.set_sample_rate(-666));
-  }
-}
-
-TEST_CASE("Setting an unsupported sample rate on output devices")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    CHECK_FALSE(device.set_sample_rate(-666));
-  }
-}
-#endif
-
 TEST_CASE("The buffer size type is integral")
 {
   CHECK(std::is_integral_v<audio_device::buffer_size_t>);
@@ -218,24 +200,6 @@ TEST_CASE("Setting a supported buffer size on output devices")
 {
   // TODO: this needs to wait until we have an API to query supported settings
 }
-
-#ifndef _WIN32
-TEST_CASE("Setting an unsupported buffer size on input devices")
-{
-  auto devices = get_audio_input_device_list();
-  for (auto& device : devices) {
-    CHECK_FALSE(device.set_buffer_size_frames(-666));
-  }
-}
-
-TEST_CASE("Setting an unsupported buffer size on output devices")
-{
-  auto devices = get_audio_output_device_list();
-  for (auto& device : devices) {
-    CHECK_FALSE(device.set_buffer_size_frames(-666));
-  }
-}
-#endif
 
 TEST_CASE("On any platform that supports multithreading, all input devices must support connect")
 {
