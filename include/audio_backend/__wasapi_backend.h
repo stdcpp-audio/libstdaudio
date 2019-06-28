@@ -235,26 +235,12 @@ public:
 
 	using sample_rate_t = DWORD;
 
-	// TODO: WASAPI allows me to ask whether or not a particular mix format is valid,
-	// but does not provide a way to enumerate valid formats.
-	// Code on the Internet seems to indicate that if you drop down to waveOut/waveIn,
-	// then you can query the device caps using waveOutGetDevCaps()/waveInGetDevCaps().
-	// That will give you a bit-field containing supported commonly-used settings.
-	// That seems like an awful lot of work, but maybe it's okay because we can just
-	// do it in the constructor and call it done.
-	// Reference on how to match WASAPI to WaveOut:
-	// https://docs.microsoft.com/en-us/windows/desktop/CoreAudio/device-roles-for-legacy-windows-multimedia-applications
 	sample_rate_t get_sample_rate() const noexcept
 	{
 		if (_MixFormat == nullptr)
 			return 0;
 
 		return _MixFormat->nSamplesPerSec;
-	}
-
-	span<const sample_rate_t> get_supported_sample_rates() const noexcept
-	{
-		return {};
 	}
 
 	bool set_sample_rate(sample_rate_t new_sample_rate)
@@ -274,11 +260,6 @@ public:
 			return 0;
 
 		return _MixFormat->nBlockAlign;
-	}
-
-	span<const buffer_size_t> get_supported_buffer_sizes_frames() const noexcept
-	{
-		return {};
 	}
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
@@ -476,6 +457,7 @@ public:
 		if (_pAudioClient == nullptr)
 			return false;
 
+		// TODO: This function is not correct
 		UINT32 CurrentPadding = 0;
 		_pAudioClient->GetCurrentPadding(&CurrentPadding);
 		return CurrentPadding > 0;
