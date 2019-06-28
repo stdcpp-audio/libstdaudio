@@ -5,6 +5,7 @@
 
 #pragma once
 
+#define NOMINMAX
 #include <cctype>
 #include <codecvt>
 #include <string>
@@ -700,4 +701,9 @@ audio_device_list get_audio_output_device_list()
 	return __audio_device_enumerator::get_output_device_list();
 }
 
+template <typename F, typename /*= enable_if_t<std::is_invocable_v<F>>*/>
+void set_audio_device_list_callback(audio_device_list_event, F&&)
+{
+
+}
 _LIBSTDAUDIO_NAMESPACE_END
