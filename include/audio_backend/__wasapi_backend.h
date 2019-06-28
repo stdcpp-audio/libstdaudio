@@ -21,11 +21,9 @@
 #include <audioclient.h>
 #include <mmdeviceapi.h>
 #include <Functiondiscoverykeys_devpkey.h>
+#include <variant>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
-
-// TODO: make __wasapi_sample_type flexible according to the recommendation (see AudioSampleType).
-using __wasapi_native_sample_type = float;
 
 class __wasapi_util
 {
@@ -132,6 +130,7 @@ public:
 		_device_id(std::move(other._device_id)),
 		_running(other._running.load()),
 		_name(std::move(other._name)),
+		_desired_buffer_size_frames(other._desired_buffer_size_frames),
 		_MixFormat(other._MixFormat),
 		_ProcessingThread(std::move(other._ProcessingThread)),
 		_bufferFrameCount(other._bufferFrameCount),
@@ -159,6 +158,7 @@ public:
 		_device_id = std::move(other._device_id);
 		_running = other._running.load();
 		_name = std::move(other._name);
+		_desired_buffer_size_frames = other._desired_buffer_size_frames;
 		_MixFormat = other._MixFormat;
 		_ProcessingThread = std::move(other._ProcessingThread);
 		_bufferFrameCount = other._bufferFrameCount;
@@ -238,27 +238,55 @@ public:
 	bool set_sample_rate(sample_rate_t new_sample_rate)
 	{
 		_MixFormat.Format.nSamplesPerSec = new_sample_rate;
+		_fixup_mix_format();
 		return true;
 	}
 
-	using buffer_size_t = WORD;
+	using buffer_size_t = uint32_t;
 
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
-		return _MixFormat.Format.nBlockAlign;
+		return _desired_buffer_size_frames;
 	}
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
-		_MixFormat.Format.nBlockAlign = new_buffer_size;
+		_desired_buffer_size_frames = new_buffer_size;
 		return true;
 	}
 
 	template <typename _SampleType>
 	constexpr bool supports_sample_type() const noexcept
 	{
-		// TODO: How do we support different sample types?
-		return is_same_v<_SampleType, __wasapi_native_sample_type>;
+		return 
+			is_same_v<_SampleType, float>
+			|| is_same_v<_SampleType, int32_t>
+			|| is_same_v<_SampleType, int16_t>;
+	}
+
+	template <typename _SampleType>
+	bool set_sample_type()
+	{
+		if constexpr (is_same_v<_SampleType, float>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+		}
+		else if constexpr (is_same_v<_SampleType, int32_t>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+		}
+		else if constexpr (is_same_v<_SampleType, int16_t>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+		}
+		else
+		{
+			return false;
+		}
+		_MixFormat.Format.wBitsPerSample = sizeof(_SampleType) * 8;
+		_MixFormat.Samples.wValidBitsPerSample = _MixFormat.Format.wBitsPerSample;
+		_fixup_mix_format();
+		return true;
 	}
 
 	constexpr bool can_connect() const noexcept
@@ -272,13 +300,33 @@ public:
 	}
 
 	template <typename _CallbackType,
-		typename = enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
+		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>, int> = 0>
 	void connect(_CallbackType callback)
 	{
-		if (_running)
-			throw audio_device_exception("cannot connect to running audio_device");
+		if (!_mix_format_matches_type<float>())
+			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
 
-		_user_callback = move(callback);
+		_connect_helper(__wasapi_float_callback_t{callback});
+	}
+
+	template <typename _CallbackType,
+		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<int32_t>&>, int> = 0>
+	void connect(_CallbackType callback)
+	{
+		if (!_mix_format_matches_type<int32_t>())
+			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
+
+		_connect_helper(__wasapi_int32_callback_t{callback});
+	}
+
+	template <typename _CallbackType,
+		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<int16_t>&>, int> = 0>
+	void connect(_CallbackType callback)
+	{
+		if (!_mix_format_matches_type<int16_t>())
+			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
+
+		_connect_helper(__wasapi_int16_callback_t{ callback });
 	}
 
 	bool start()
@@ -302,8 +350,8 @@ public:
 
 			REFERENCE_TIME periodicity = 0;
 
-			// TODO: We need to expose this buffer duration to the API
-			REFERENCE_TIME buffer_duration = 100'000;
+			const REFERENCE_TIME RefTimesPerSecond = 10'000'000;
+			REFERENCE_TIME buffer_duration = (RefTimesPerSecond * _desired_buffer_size_frames) / _MixFormat.Format.nSamplesPerSec;
 			HRESULT hr = _pAudioClient->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
@@ -335,7 +383,7 @@ public:
 
 			_running = true;
 
-			if (_user_callback)
+			if (!_user_callback.valueless_by_exception())
 			{
 				_ProcessingThread = thread{ [this]()
 				{
@@ -343,8 +391,15 @@ public:
 
 					while (_running)
 					{
+						visit([this](auto&& callback)
+							{
+								if (callback)
+								{
+									process(callback);
+								}
+							},
+							_user_callback);
 						wait();
-						process(_user_callback);
 					}
 				} };
 			}
@@ -388,52 +443,33 @@ public:
 	}
 
 	template <typename _CallbackType,
-		typename = enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<__wasapi_native_sample_type>&>>>
-	void process(_CallbackType& callback)
+		enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>, int> = 0>
+	void process(const _CallbackType& callback)
 	{
-		if (_pAudioClient == nullptr)
-			return;
+		if (!_mix_format_matches_type<float>())
+			throw audio_device_exception("attempting to process a callback for a sample type that does not match the configured sample type");
 
-		if (is_output())
-		{
-			UINT32 CurrentPadding = 0;
-			_pAudioClient->GetCurrentPadding(&CurrentPadding);
+		_process_helper<float>(callback);
+	}
 
-			auto NumFramesAvailable = _bufferFrameCount - CurrentPadding;
-			if (NumFramesAvailable == 0)
-				return;
+	template <typename _CallbackType,
+		enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<int32_t>&>, int> = 0>
+		void process(const _CallbackType& callback)
+	{
+		if (!_mix_format_matches_type<int32_t>())
+			throw audio_device_exception("attempting to process a callback for a sample type that does not match the configured sample type");
 
-			BYTE* pData = nullptr;
-			_pAudioRenderClient->GetBuffer(NumFramesAvailable, &pData);
-			if (pData == nullptr)
-				return;
+		_process_helper<int32_t>(callback);
+	}
 
-			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.output_buffer = {reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFramesAvailable, _MixFormat.Format.nChannels, contiguous_interleaved };
-			callback(*this, device_io);
+	template <typename _CallbackType,
+		enable_if_t<is_invocable_v<_CallbackType, audio_device&, audio_device_io<int16_t>&>, int> = 0>
+		void process(const _CallbackType& callback)
+	{
+		if (!_mix_format_matches_type<int16_t>())
+			throw audio_device_exception("attempting to process a callback for a sample type that does not match the configured sample type");
 
-			_pAudioRenderClient->ReleaseBuffer(NumFramesAvailable, 0);
-		}
-		else if (is_input())
-		{
-			UINT32 NumFrames = 0;
-			_pAudioCaptureClient->GetNextPacketSize(&NumFrames);
-			if (NumFrames == 0)
-				return;
-
-			// TODO: Support device position.
-			DWORD dwFlags = 0;
-			BYTE* pData = nullptr;
-			_pAudioCaptureClient->GetBuffer(&pData, &NumFrames, &dwFlags, nullptr, nullptr);
-			if (pData == nullptr)
-				return;
-
-			audio_device_io<__wasapi_native_sample_type> device_io;
-			device_io.input_buffer = { reinterpret_cast<__wasapi_native_sample_type*>(pData), NumFrames, _MixFormat.Format.nChannels, contiguous_interleaved };
-			callback(*this, device_io);
-
-			_pAudioCaptureClient->ReleaseBuffer(NumFrames);
-		}
+		_process_helper<int16_t>(callback);
 	}
 
 	bool has_unprocessed_io() const noexcept
@@ -441,10 +477,10 @@ public:
 		if (_pAudioClient == nullptr)
 			return false;
 
-		// TODO: This function is not correct
 		UINT32 CurrentPadding = 0;
 		_pAudioClient->GetCurrentPadding(&CurrentPadding);
-		return CurrentPadding > 0;
+		auto NumFramesAvailable = _bufferFrameCount - CurrentPadding;
+		return NumFramesAvailable > 0;
 	}
 
 private:
@@ -517,6 +553,95 @@ private:
 		CoTaskMemFree(_DeviceMixFormatEx);
 	}
 
+	void _fixup_mix_format()
+	{
+		_MixFormat.Format.nBlockAlign = _MixFormat.Format.nChannels * _MixFormat.Format.wBitsPerSample / 8;
+		_MixFormat.Format.nAvgBytesPerSec = _MixFormat.Format.nSamplesPerSec * _MixFormat.Format.wBitsPerSample * _MixFormat.Format.nChannels / 8;
+	}
+
+	template<typename _CallbackType>
+	void _connect_helper(_CallbackType callback)
+	{
+		if (_running)
+			throw audio_device_exception("cannot connect to running audio_device");
+
+		_user_callback = move(callback);
+	}
+
+	template<typename _SampleType>
+	bool _mix_format_matches_type() const noexcept
+	{
+		if constexpr (is_same_v<_SampleType, float>)
+		{
+			return _MixFormat.SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+		}
+		else if constexpr (is_same_v<_SampleType, int32_t>)
+		{
+			return _MixFormat.SubFormat == KSDATAFORMAT_SUBTYPE_PCM
+				&& _MixFormat.Format.wBitsPerSample == sizeof(int32_t) * 8;
+		}
+		else if constexpr (is_same_v<_SampleType, int16_t>)
+		{
+			return _MixFormat.SubFormat == KSDATAFORMAT_SUBTYPE_PCM
+				&& _MixFormat.Format.wBitsPerSample == sizeof(int16_t) * 8;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	template<typename _SampleType, typename _CallbackType>
+	void _process_helper(const _CallbackType& callback)
+	{
+		if (_pAudioClient == nullptr)
+			return;
+
+		if (!_mix_format_matches_type<_SampleType>())
+			return;
+
+		if (is_output())
+		{
+			UINT32 CurrentPadding = 0;
+			_pAudioClient->GetCurrentPadding(&CurrentPadding);
+
+			auto NumFramesAvailable = _bufferFrameCount - CurrentPadding;
+			if (NumFramesAvailable == 0)
+				return;
+
+			BYTE* pData = nullptr;
+			_pAudioRenderClient->GetBuffer(NumFramesAvailable, &pData);
+			if (pData == nullptr)
+				return;
+
+			audio_device_io<_SampleType> device_io;
+			device_io.output_buffer = { reinterpret_cast<_SampleType*>(pData), NumFramesAvailable, _MixFormat.Format.nChannels, contiguous_interleaved };
+			callback(*this, device_io);
+
+			_pAudioRenderClient->ReleaseBuffer(NumFramesAvailable, 0);
+		}
+		else if (is_input())
+		{
+			UINT32 NumFrames = 0;
+			_pAudioCaptureClient->GetNextPacketSize(&NumFrames);
+			if (NumFrames == 0)
+				return;
+
+			// TODO: Support device position.
+			DWORD dwFlags = 0;
+			BYTE* pData = nullptr;
+			_pAudioCaptureClient->GetBuffer(&pData, &NumFrames, &dwFlags, nullptr, nullptr);
+			if (pData == nullptr)
+				return;
+
+			audio_device_io<_SampleType> device_io;
+			device_io.input_buffer = { reinterpret_cast<_SampleType*>(pData), NumFrames, _MixFormat.Format.nChannels, contiguous_interleaved };
+			callback(*this, device_io);
+
+			_pAudioCaptureClient->ReleaseBuffer(NumFrames);
+		}
+	}
+
 	IMMDevice* _pDevice = nullptr;
 	IAudioClient* _pAudioClient = nullptr;
 	IAudioCaptureClient* _pAudioCaptureClient = nullptr;
@@ -525,6 +650,7 @@ private:
 	wstring _device_id;
 	atomic<bool> _running = false;
 	string _name;
+	buffer_size_t _desired_buffer_size_frames = 0;
 
 	WAVEFORMATEXTENSIBLE _MixFormat;
 	thread _ProcessingThread;
@@ -533,9 +659,12 @@ private:
 
 	using __stop_callback_t = function<void(audio_device&)>;
 	__stop_callback_t _stop_callback;
-	using __wasapi_callback_t = function<void(audio_device&, audio_device_io<__wasapi_native_sample_type>&)>;
-	__wasapi_callback_t _user_callback;
-	audio_device_io<__wasapi_native_sample_type> _current_buffers;
+
+	using __wasapi_float_callback_t = function<void(audio_device&, audio_device_io<float>&)>;
+	using __wasapi_int32_callback_t = function<void(audio_device&, audio_device_io<int32_t>&)>;
+	using __wasapi_int16_callback_t = function<void(audio_device&, audio_device_io<int16_t>&)>;
+	variant<__wasapi_float_callback_t, __wasapi_int32_callback_t, __wasapi_int16_callback_t> _user_callback;
+
 	__wasapi_util::CCoInitialize ComInitializer;
 };
 
