@@ -22,6 +22,7 @@
 #include <mmdeviceapi.h>
 #include <Functiondiscoverykeys_devpkey.h>
 #include <variant>
+#include <array>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -130,7 +131,6 @@ public:
 		_device_id(std::move(other._device_id)),
 		_running(other._running.load()),
 		_name(std::move(other._name)),
-		_desired_buffer_size_frames(other._desired_buffer_size_frames),
 		_MixFormat(other._MixFormat),
 		_ProcessingThread(std::move(other._ProcessingThread)),
 		_bufferFrameCount(other._bufferFrameCount),
@@ -158,7 +158,6 @@ public:
 		_device_id = std::move(other._device_id);
 		_running = other._running.load();
 		_name = std::move(other._name);
-		_desired_buffer_size_frames = other._desired_buffer_size_frames;
 		_MixFormat = other._MixFormat;
 		_ProcessingThread = std::move(other._ProcessingThread);
 		_bufferFrameCount = other._bufferFrameCount;
@@ -242,16 +241,16 @@ public:
 		return true;
 	}
 
-	using buffer_size_t = uint32_t;
+	using buffer_size_t = UINT32;
 
 	buffer_size_t get_buffer_size_frames() const noexcept
 	{
-		return _desired_buffer_size_frames;
+		return _bufferFrameCount;
 	}
 
 	bool set_buffer_size_frames(buffer_size_t new_buffer_size)
 	{
-		_desired_buffer_size_frames = new_buffer_size;
+		_bufferFrameCount = new_buffer_size;
 		return true;
 	}
 
@@ -313,15 +312,17 @@ public:
 		_connect_helper(__wasapi_int16_callback_t{ callback });
 	}
 
-	bool start()
-	{
-		static auto no_op = [](audio_device&) noexcept {};
-		return start(no_op, no_op);
-	}
+	// TODO: remove std::function as soon as C++20 default-ctable lambda and lambda in unevaluated contexts become available
+	using no_op_t = std::function<void(audio_device&)>;
 
-	template <typename _StartCallbackType, typename _StopCallbackType,
-		typename = enable_if_t<is_nothrow_invocable_v<_StartCallbackType, audio_device&> && is_nothrow_invocable_v<_StopCallbackType, audio_device&>>>
-		bool start(_StartCallbackType&& start_callback, _StopCallbackType&& stop_callback)
+	template <
+		typename _StartCallbackType = no_op_t,
+		typename _StopCallbackType = no_op_t,
+		// TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
+		typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+	bool start(
+		_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
+		_StopCallbackType&& stop_callback = [](audio_device&) noexcept {})
 	{
 		if (_pAudioClient == nullptr)
 			return false;
@@ -335,7 +336,7 @@ public:
 			REFERENCE_TIME periodicity = 0;
 
 			const REFERENCE_TIME RefTimesPerSecond = 10'000'000;
-			REFERENCE_TIME buffer_duration = (RefTimesPerSecond * _desired_buffer_size_frames) / _MixFormat.Format.nSamplesPerSec;
+			REFERENCE_TIME buffer_duration = (RefTimesPerSecond * _bufferFrameCount) / _MixFormat.Format.nSamplesPerSec;
 			HRESULT hr = _pAudioClient->Initialize(
 				AUDCLNT_SHAREMODE_SHARED,
 				AUDCLNT_STREAMFLAGS_RATEADJUST | AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
@@ -459,6 +460,9 @@ public:
 	bool has_unprocessed_io() const noexcept
 	{
 		if (_pAudioClient == nullptr)
+			return false;
+
+		if (!_running)
 			return false;
 
 		UINT32 CurrentPadding = 0;
@@ -670,7 +674,6 @@ private:
 	wstring _device_id;
 	atomic<bool> _running = false;
 	string _name;
-	buffer_size_t _desired_buffer_size_frames = 0;
 
 	WAVEFORMATEXTENSIBLE _MixFormat;
 	thread _ProcessingThread;
@@ -822,9 +825,158 @@ audio_device_list get_audio_output_device_list()
 	return __audio_device_enumerator::get_output_device_list();
 }
 
-template <typename F, typename /*= enable_if_t<std::is_invocable_v<F>>*/>
-void set_audio_device_list_callback(audio_device_list_event, F&&)
+class __audio_device_monitor
 {
-	// TODO: Implement me!
+public:
+	static __audio_device_monitor& instance()
+	{
+		static __audio_device_monitor singleton;
+		return singleton;
+	}
+
+	template <typename F>
+	void register_callback(audio_device_list_event event, F&& callback)
+	{
+		_callback_monitors[static_cast<int>(event)].reset(new WASAPINotificationClient{_enumerator, event, std::move(callback)});
+	}
+
+	template <>
+	void register_callback(audio_device_list_event event, nullptr_t&&)
+	{
+		_callback_monitors[static_cast<int>(event)].reset();
+	}
+
+private:
+	__audio_device_monitor()
+	{
+		HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (void**)&_enumerator);
+		if (FAILED(hr))
+			throw audio_device_exception("Could not create device enumerator");
+	}
+
+	~__audio_device_monitor()
+	{
+		if (_enumerator == nullptr)
+			return;
+
+		for (auto& callback_monitor : _callback_monitors)
+		{
+			callback_monitor.reset();
+		}
+
+		_enumerator->Release();
+	}
+
+	class WASAPINotificationClient : public IMMNotificationClient
+	{
+	public:
+		WASAPINotificationClient(IMMDeviceEnumerator* enumerator, audio_device_list_event event, function<void()> callback) :
+			_enumerator(enumerator),
+			event(event),
+			callback(std::move(callback))
+		{
+			if (_enumerator == nullptr)
+				throw audio_device_exception("Attempting to create a notification client for a null enumerator");
+
+			_enumerator->RegisterEndpointNotificationCallback(this);
+		}
+
+		virtual ~WASAPINotificationClient()
+		{
+			_enumerator->UnregisterEndpointNotificationCallback(this);
+		}
+
+		HRESULT STDMETHODCALLTYPE OnDefaultDeviceChanged(EDataFlow flow, ERole role, [[maybe_unused]] LPCWSTR pwstrDeviceId)
+		{
+			if (role != ERole::eConsole)
+				return S_OK;
+
+			if (flow == EDataFlow::eRender)
+			{
+				if (event != audio_device_list_event::default_output_device_changed)
+					return S_OK;
+			}
+			else if (flow == EDataFlow::eCapture)
+			{
+				if (event != audio_device_list_event::default_input_device_changed)
+					return S_OK;
+			}
+			callback();
+			return S_OK;
+		}
+
+		HRESULT STDMETHODCALLTYPE OnDeviceAdded([[maybe_unused]] LPCWSTR pwstrDeviceId)
+		{
+			if (event != audio_device_list_event::device_list_changed)
+				return S_OK;
+		
+			callback();
+			return S_OK;
+		}
+		HRESULT STDMETHODCALLTYPE OnDeviceRemoved([[maybe_unused]] LPCWSTR pwstrDeviceId)
+		{
+			if (event != audio_device_list_event::device_list_changed)
+				return S_OK;
+
+			callback();
+			return S_OK;
+		}
+		HRESULT STDMETHODCALLTYPE OnDeviceStateChanged([[maybe_unused]] LPCWSTR pwstrDeviceId, [[maybe_unused]] DWORD dwNewState)
+		{
+			if (event != audio_device_list_event::device_list_changed)
+				return S_OK;
+
+			callback();
+			return S_OK;
+		}
+		HRESULT STDMETHODCALLTYPE OnPropertyValueChanged([[maybe_unused]] LPCWSTR pwstrDeviceId, [[maybe_unused]] const PROPERTYKEY key)
+		{
+			return S_OK;
+		}
+
+		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, VOID **ppvInterface)
+		{
+			if (IID_IUnknown == riid)
+			{
+				*ppvInterface = (IUnknown*)this;
+			}
+			else if (__uuidof(IMMNotificationClient) == riid)
+			{
+				*ppvInterface = (IMMNotificationClient*)this;
+			}
+			else
+			{
+				*ppvInterface = nullptr;
+				return E_NOINTERFACE;
+			}
+			return S_OK;
+		}
+
+		ULONG STDMETHODCALLTYPE AddRef()
+		{
+			return 1;
+		}
+
+		ULONG STDMETHODCALLTYPE Release()
+		{
+			return 0;
+		}
+	
+	private:
+		__wasapi_util::CCoInitialize ComInitializer;
+		IMMDeviceEnumerator* _enumerator;
+		audio_device_list_event event;
+		function<void()> callback;
+	};
+
+	__wasapi_util::CCoInitialize ComInitializer;
+	IMMDeviceEnumerator* _enumerator = nullptr;
+	array<unique_ptr<WASAPINotificationClient>, 3> _callback_monitors;
+};
+
+template <typename F, typename /* = enable_if_t<is_invocable_v<F>> */>
+void set_audio_device_list_callback(audio_device_list_event event, F&& callback)
+{
+	__audio_device_monitor::instance().register_callback(event, std::move(callback));
 }
 _LIBSTDAUDIO_NAMESPACE_END
