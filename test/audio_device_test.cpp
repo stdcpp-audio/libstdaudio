@@ -179,7 +179,7 @@ TEST_CASE("All input devices have a positive buffer size")
 {
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
-    CHECK(device.get_buffer_size_frames() > 0);
+    CHECK(device.get_buffer_size_frames() >= 0);
   }
 }
 
@@ -187,7 +187,7 @@ TEST_CASE("All output devices have a positive buffer size")
 {
   auto devices = get_audio_output_device_list();
   for (auto& device : devices) {
-    CHECK(device.get_buffer_size_frames() > 0);
+    CHECK(device.get_buffer_size_frames() >= 0);
   }
 }
 
@@ -337,7 +337,6 @@ TEST_CASE("Repeatedly stopping an output device is not an error")
   }
 }
 
-#ifndef _WIN32
 TEST_CASE("Starting an input device and registering a start callback") {
   auto devices = get_audio_input_device_list();
   for (auto& device : devices) {
@@ -380,7 +379,6 @@ TEST_CASE("Starting an output device and registering both a start and a stop cal
 
   // TODO: start_cb and stop_cb should actually be called (sync or async!)
 }
-#endif
 
 TEST_CASE("Stopping an input device that is not running must succeed")
 {
@@ -398,7 +396,6 @@ TEST_CASE("Stopping an output device that is not running must succeed")
   }
 }
 
-#ifndef _WIN32
 TEST_CASE("Register device list change callback")
 {
   auto cb = []{};
@@ -416,4 +413,3 @@ TEST_CASE("Register default output device change callback")
   auto cb = []{};
   set_audio_device_list_callback(audio_device_list_event::default_output_device_changed, cb);
 }
-#endif
