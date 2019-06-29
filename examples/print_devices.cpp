@@ -62,5 +62,6 @@ int main() {
     print_all_devices();
   });
 
-  std::this_thread::sleep_for(std::chrono::system_clock::duration::max());
+  while(true)
+	std::this_thread::sleep_for(std::chrono::system_clock::duration::max());
 }
