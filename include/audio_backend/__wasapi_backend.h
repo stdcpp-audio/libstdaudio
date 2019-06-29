@@ -267,26 +267,16 @@ public:
 	template <typename _SampleType>
 	bool set_sample_type()
 	{
-		if constexpr (is_same_v<_SampleType, float>)
-		{
-			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
-		}
-		else if constexpr (is_same_v<_SampleType, int32_t>)
-		{
-			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
-		}
-		else if constexpr (is_same_v<_SampleType, int16_t>)
-		{
-			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
-		}
-		else
-		{
-			return false;
-		}
-		_MixFormat.Format.wBitsPerSample = sizeof(_SampleType) * 8;
-		_MixFormat.Samples.wValidBitsPerSample = _MixFormat.Format.wBitsPerSample;
-		_fixup_mix_format();
-		return true;
+		if (_is_connected() && !is_sample_type<_SampleType>())
+			throw audio_device_exception("cannot change sample type after connecting a callback");
+
+		return _set_sample_type_helper<_SampleType>();
+	}
+
+	template <typename _SampleType>
+	bool is_sample_type() const
+	{
+		return _mix_format_matches_type<_SampleType>();
 	}
 
 	constexpr bool can_connect() const noexcept
@@ -303,9 +293,7 @@ public:
 		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>, int> = 0>
 	void connect(_CallbackType callback)
 	{
-		if (!_mix_format_matches_type<float>())
-			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
-
+		_set_sample_type_helper<float>();
 		_connect_helper(__wasapi_float_callback_t{callback});
 	}
 
@@ -313,9 +301,7 @@ public:
 		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<int32_t>&>, int> = 0>
 	void connect(_CallbackType callback)
 	{
-		if (!_mix_format_matches_type<int32_t>())
-			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
-
+		_set_sample_type_helper<int32_t>();
 		_connect_helper(__wasapi_int32_callback_t{callback});
 	}
 
@@ -323,9 +309,7 @@ public:
 		enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<int16_t>&>, int> = 0>
 	void connect(_CallbackType callback)
 	{
-		if (!_mix_format_matches_type<int16_t>())
-			throw audio_device_exception("attempting to connect a callback for a sample type that does not match the configured sample type");
-
+		_set_sample_type_helper<int16_t>();
 		_connect_helper(__wasapi_int16_callback_t{ callback });
 	}
 
@@ -640,6 +624,42 @@ private:
 
 			_pAudioCaptureClient->ReleaseBuffer(NumFrames);
 		}
+	}
+
+	template <typename _SampleType>
+	bool _set_sample_type_helper()
+	{
+		if constexpr (is_same_v<_SampleType, float>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+		}
+		else if constexpr (is_same_v<_SampleType, int32_t>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+		}
+		else if constexpr (is_same_v<_SampleType, int16_t>)
+		{
+			_MixFormat.SubFormat = KSDATAFORMAT_SUBTYPE_PCM;
+		}
+		else
+		{
+			return false;
+		}
+		_MixFormat.Format.wBitsPerSample = sizeof(_SampleType) * 8;
+		_MixFormat.Samples.wValidBitsPerSample = _MixFormat.Format.wBitsPerSample;
+		_fixup_mix_format();
+		return true;
+	}
+
+	bool _is_connected() const noexcept
+	{
+		if (_user_callback.valueless_by_exception())
+			return false;
+
+		return visit([](auto&& callback)
+		{
+			return static_cast<bool>(callback);
+		}, _user_callback);
 	}
 
 	IMMDevice* _pDevice = nullptr;
