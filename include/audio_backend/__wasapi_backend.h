@@ -511,11 +511,23 @@ private:
 			PROPVARIANT property_variant;
 			PropVariantInit(&property_variant);
 
-			hr = property_store->GetValue(PKEY_Device_FriendlyName, &property_variant);
-			if (SUCCEEDED(hr))
-			{
-				_name = __wasapi_util::convert_string(property_variant.pwszVal);
-			}
+			auto try_acquire_name = [&](auto property_name){
+				auto acquire_name = [&]{
+					_name = __wasapi_util::convert_string(property_variant.pwszVal);
+				};
+				hr = property_store->GetValue(property_name, &property_variant);
+				if(SUCCEEDED(hr))
+				{
+					acquire_name();
+					return true;
+				}
+				else
+					return false;
+			};
+
+			try_acquire_name(PKEY_Device_FriendlyName)
+				|| try_acquire_name(PKEY_DeviceInterface_FriendlyName)
+				|| try_acquire_name(PKEY_Device_DeviceDesc);
 
 			PropVariantClear(&property_variant);
 		}
