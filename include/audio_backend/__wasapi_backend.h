@@ -15,7 +15,6 @@
 #include <thread>
 #include <forward_list>
 #include <atomic>
-#include <cassert>
 #include <string_view>
 #include <initguid.h>
 #include <audioclient.h>
@@ -479,11 +478,15 @@ private:
 		_is_render_device(is_render_device)
 	{
 		// TODO: Handle errors better.  Maybe by throwing exceptions?
-		assert(_device != nullptr);
+		if (_device == nullptr)
+			throw audio_device_exception("IMMDevice is null.");
 
 		_init_device_id_and_name();
-		assert(!_device_id.empty());
-		assert(!_name.empty());
+		if (_device_id.empty())
+			throw audio_device_exception("Could not get device id.");
+
+		if (_name.empty())
+			throw audio_device_exception("Could not get device name.");
 
 		_init_audio_client();
 		if (_audio_client == nullptr)
@@ -753,7 +756,14 @@ private:
 		if (FAILED(hr))
 			return nullopt;
 
-		return audio_device{ device, output_device };
+		try
+		{
+			return audio_device{ device, output_device };
+		}
+		catch (const audio_device_exception&)
+		{
+			return nullopt;
+		}
 	}
 
 	static vector<IMMDevice*> get_devices(bool output_devices)
@@ -809,8 +819,23 @@ private:
 		audio_device_list devices;
 		const auto mmdevices = get_devices(output_devices);
 
-		for (auto* mmdevice : mmdevices) {
-			devices.push_front(audio_device{ mmdevice, output_devices });
+		for (auto* mmdevice : mmdevices)
+		{
+			if (mmdevice == nullptr)
+				continue;
+
+			try
+			{
+				devices.push_front(audio_device{ mmdevice, output_devices });
+			}
+			catch (const audio_device_exception&)
+			{
+				// TODO: Should I do anything with this exception?
+				// My impulse is to leave it alone.  The result of this function
+				// should be an array of properly-constructed devices.  If we
+				// couldn't create a device, then we shouldn't return it from
+				// this function.
+			}
 		}
 
 		return devices;
