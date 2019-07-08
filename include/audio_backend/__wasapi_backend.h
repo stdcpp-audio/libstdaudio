@@ -514,18 +514,16 @@ private:
 			PROPVARIANT property_variant;
 			PropVariantInit(&property_variant);
 
-			auto try_acquire_name = [&](auto property_name){
-				auto acquire_name = [&]{
-					_name = __wasapi_util::convert_string(property_variant.pwszVal);
-				};
+			auto try_acquire_name = [&](const auto& property_name)
+			{
 				hr = property_store->GetValue(property_name, &property_variant);
 				if(SUCCEEDED(hr))
 				{
-					acquire_name();
+					_name = __wasapi_util::convert_string(property_variant.pwszVal);
 					return true;
 				}
-				else
-					return false;
+
+				return false;
 			};
 
 			try_acquire_name(PKEY_Device_FriendlyName)
