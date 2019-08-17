@@ -11,6 +11,12 @@
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
+struct audio_device_exception : public runtime_error {
+  explicit audio_device_exception(const char* what)
+    : runtime_error(what) {
+  }
+};
+
 class audio_device {
 public:
   audio_device() = delete;
@@ -74,7 +80,22 @@ public:
     return false;
   }
 
-  bool start() {
+  template <typename _CallbackType,
+           enable_if_t<is_nothrow_invocable_v<_CallbackType, audio_device&, audio_device_io<float>&>, int> = 0>
+  void connect(_CallbackType callback)
+  {
+    throw audio_device_exception("cannot connect to a null-backend audio_device");
+  }
+
+  // TODO: remove std::function as soon as C++20 default-ctable lambda and lambda in unevaluated contexts become available
+  using no_op_t = std::function<void(audio_device &)>;
+
+  template <typename _StartCallbackType = no_op_t,
+            typename _StopCallbackType = no_op_t,
+            // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
+            typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+  bool start(_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
+             _StopCallbackType&& stop_callback = [](audio_device&) noexcept {}) {
     return false;
   }
 
@@ -136,6 +157,10 @@ audio_device_list get_audio_input_device_list() {
 
 audio_device_list get_audio_output_device_list() {
   return {};
+}
+
+template <typename F, typename /* = enable_if_t<is_invocable_v<F>> */>
+void set_audio_device_list_callback(audio_device_list_event event, F &&callback) {
 }
 
 _LIBSTDAUDIO_NAMESPACE_END
