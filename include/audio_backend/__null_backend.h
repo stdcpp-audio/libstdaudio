@@ -8,6 +8,8 @@
 #include <string_view>
 #include <chrono>
 #include <cassert>
+#include <forward_list>
+#include <functional>
 
 _LIBSTDAUDIO_NAMESPACE_BEGIN
 
@@ -74,7 +76,14 @@ public:
     return false;
   }
 
-  bool start() {
+  using no_op_t = std::function<void(audio_device&)>;
+
+  template <typename _StartCallbackType = no_op_t,
+            typename _StopCallbackType = no_op_t,
+            // TODO: is_nothrow_invocable_t does not compile, temporarily replaced with is_invocable_t
+            typename = enable_if_t<is_invocable_v<_StartCallbackType, audio_device&> && is_invocable_v<_StopCallbackType, audio_device&>>>
+  bool start(_StartCallbackType&& start_callback = [](audio_device&) noexcept {},
+             _StopCallbackType&& stop_callback = [](audio_device&) noexcept {}) {
     return false;
   }
 
@@ -98,28 +107,13 @@ public:
   constexpr bool has_unprocessed_io() const noexcept {
     return false;
   }
+
+  template <typename _CallbackType>
+  void connect(_CallbackType callback) {
+  }
 };
 
-class audio_device_list
-{
-private:
-  class iterator {
-  public:
-    auto operator==(const iterator&) const noexcept { return true; }
-    auto operator!=(const iterator&) const noexcept { return false; }
-    auto operator++() -> const iterator& { assert(false); return *this; }
-    auto operator*() -> audio_device& {
-      assert(false); static audio_device device{};
-      return device;
-    }
-  };
-
-public:
-  auto begin() -> iterator { return {}; }
-  auto end() -> iterator { return {}; }
-  auto begin() const -> iterator { return {}; }
-  auto end() const -> iterator { return {}; }
-  auto empty() const -> bool { return true; }
+class audio_device_list : public forward_list<audio_device> {
 };
 
 optional<audio_device> get_default_audio_input_device() {
@@ -136,6 +130,10 @@ audio_device_list get_audio_input_device_list() {
 
 audio_device_list get_audio_output_device_list() {
   return {};
+}
+
+template <typename F, typename /* = enable_if_t<is_nothrow_invocable_v<F>> */ >
+void set_audio_device_list_callback(audio_device_list_event event, F&& cb) {
 }
 
 _LIBSTDAUDIO_NAMESPACE_END

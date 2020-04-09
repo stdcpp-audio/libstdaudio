@@ -9,6 +9,7 @@
 
 #include <cmath>
 #include <array>
+#include <atomic>
 #include <thread>
 #include <audio>
 
