@@ -6,10 +6,14 @@ The latest published revision of this proposal can always be found at [https://w
 
 ## Disclaimer
 
-This implementation is still a work in progress and may have some rough edges, but it does attempt to follow the API design
-presented in P1386. It does not exactly match P1386, though: as we discover issues and improvements, they might be implemented here first before they appear in the next P1386 revision.
+> This implementation is still a work in progress and may have some rough edges, but it does attempt to follow the API design
+> presented in P1386. It does not exactly match P1386, though: as we discover issues and improvements, they might be implemented here first before they appear in the next P1386 revision.
+>
+> Currently, this implementation works on macOS. We plan to get Windows and Linux implementations done as soon as possible.
 
-Currently, this implementation works on macOS. We plan to get Windows and Linux implementations done as soon as possible.
+Personally, I think this proposal wouldn't accept recently, but I really like and want to use these interfaces, so this library will be a custom implementation, which uses [SLD3](https://github.com/libsdl-org/SDL) (very awesome Directmedia Layer, version 3 WIP, I like it due to it keep to be modern) for multi-platform in fact implementation.
+
+Basically, this repo's custom backend is a P1386-like SLD3 C++ wrapper. So, may not send pr to upstream. Because it is no longer a header-only library. (except the proposal owner accepts that)
 
 ## Repository structure
 
